@@ -19,36 +19,8 @@ A simple Python project created as part of the **Agentic AI Internship** track.
 
 - Python **3.11+**
 - Package manager:
-  - `uv` (recommended), or
-  - `pip`
+  - `uv` (recommended),
 
-## Installation
-
-### Using uv (recommended)
-
-```bash
-uv sync
-```
-
-### Using pip
-
-```bash
-pip install -e .
-```
-
-## Run
-
-### Run the main app
-
-```bash
-python main.py
-```
-
-Expected output:
-
-```text
-Hello from projects!
-```
 
 ## Project Structure
 
