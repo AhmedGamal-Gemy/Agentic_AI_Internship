@@ -9,3 +9,8 @@ dependencies = [
   "litellm",
   "orjson>=3.11.9",
 ]
+
+[tool.uv.workspace]
+members = [
+    "challenge_generator",
+]
