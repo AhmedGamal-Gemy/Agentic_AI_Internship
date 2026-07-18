@@ -5,9 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "exa-py>=2.16.0",
   "google-adk[extenstions]",
   "litellm",
   "orjson>=3.11.9",
+  "redis>=8.0.1",
 ]
 
 [tool.uv.workspace]
