@@ -7,12 +7,11 @@ def print_hello():
 
 def save_to_database(challenge : str, solution : str) -> str:
     """ function to save the challenge and its solution to the database """
-    print(f"Challenge is {challenge}, and the solution is {solution}")
-    return result 
+    return f"Challenge is {challenge}, and the solution is {solution}"
 
 def push_to_leaderboard(challenge : str) -> str:
     """ function to show the challenge """
-    print(f"Challenge is {challenge}")
+    return f"Challenge is {challenge}"
 
 root_agent = Agent(
     model=LiteLlm("groq/llama-3.3-70b-versatile"),
