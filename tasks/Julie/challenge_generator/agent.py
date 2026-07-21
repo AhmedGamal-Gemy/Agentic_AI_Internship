@@ -7,7 +7,7 @@ def print_hello():
 
 root_agent = Agent(
     model=LiteLlm("groq/llama-3.3-70b-versatile"),
-    name='Challenge Generator',
+    name='Challenge_Generator',
     description='A helpful assistant for generating coding challenges for an internship.',
     instruction='Focus on generating valid coding challenges',
     tools=[print_hello]
