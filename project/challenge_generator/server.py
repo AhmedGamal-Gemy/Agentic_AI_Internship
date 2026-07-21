@@ -122,7 +122,7 @@ def save_to_database(challenge: Challenge):
 @app.post("/challenge")
 def push_to_leaderboard(challenge: Challenge):
     record = challenge.model_dump()
-    
+
     record["id"] = int(time.time())  # changing id triggers the flash animation
     r.set(CURRENT_CHALLENGE_KEY, json.dumps(record))
     return {"status": "posted", "id": record["id"]}

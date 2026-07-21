@@ -1,26 +1,6 @@
 from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
 
-
-
-
-def push_to_leaderboard(challenge : str) -> str:
-    """ function to show the challenge """
-
-    return f"Challenge is {challenge}"
-
-
-
-
-"""
-Real tool implementations for the Challenge Generator agent.
-Replaces the Session 1 stubs (save_to_database, push_to_leaderboard)
-and adds the new exa_search tool.
-
-Drop these functions into challenge_generator/agent.py, replacing the
-stub versions, and add them to the agent's `tools=[...]` list.
-"""
-
 import os
 import requests
 from exa_py import Exa
@@ -86,29 +66,32 @@ def save_to_database(topic: str, difficulty: str, description: str, solution : s
     return f"Saved challenge with ID {data['id']}"
 
 
-# def push_to_leaderboard(topic: str, difficulty: str, description: str, solution: str) -> str:
-#     """Post a challenge live to the leaderboard display.
+def push_to_leaderboard(topic: str, difficulty: str, description: str, solution: str) -> str:
+    """Post a challenge live to the leaderboard display.
 
-#     This sets the CURRENT challenge shown on the leaderboard HTML —
-#     it updates within 5 seconds on the projector.
+    This sets the CURRENT challenge shown on the leaderboard HTML —
+    it updates within 5 seconds on the projector.
 
-#     Args:
-#         topic: The challenge topic
-#         difficulty: One of "easy", "medium", or "hard"
-#         description: The full challenge description
+    Args:
+        topic: The challenge topic
+        difficulty: One of "easy", "medium", or "hard"
+        description: The full challenge description
 
-#     Returns:
-#         Confirmation message
-#     """
-#     payload = {"topic": topic, "difficulty": difficulty, "description": description, "solution" : solution}
+    Returns:
+        Confirmation message
+    """
+    payload = {"topic": topic, "difficulty": difficulty, "description": description, "solution" : solution}
 
-#     response = requests.post(f"{SERVER_URL}/challenge", json=payload, timeout=5)
-#     if response.status_code != 200:
-#         print("VALIDATION ERROR:", response.text)  # shows exactly what's wrong
-#     response.raise_for_status()
+    response = requests.post(f"{SERVER_URL}/challenge", json=payload, timeout=5)
+    if response.status_code != 200:
+        print("VALIDATION ERROR:", response.text)  # shows exactly what's wrong
+    response.raise_for_status()
     
-#     return "Challenge posted to leaderboard live!"
+    return "Challenge posted to leaderboard live!"
 
+
+def check_duplicate_challenge():
+    pass
 
 root_agent = Agent(
     model=LiteLlm("groq/llama-3.3-70b-versatile"),
