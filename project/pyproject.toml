@@ -11,3 +11,8 @@ dependencies = [
   "orjson>=3.11.9",
   "redis>=8.0.1",
 ]
+
+[tool.uv.workspace]
+members = [
+    "challenge_generator",
+]
