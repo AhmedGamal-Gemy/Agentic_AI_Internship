@@ -1,0 +1,12 @@
+[project]
+name = "challenge-generator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-adk>=2.4.0",
+    "litellm>=1.93.0",
+    "pip>=26.1.2",
+    "redis>=8.0.1",
+]
