@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Internship Leaderboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0c0f15;
+    color: #e4e7ed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 800px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  header h1 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #f0b429, #f97e3a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p {
+    margin-top: 0.4rem;
+    color: #7a8294;
+    font-size: 0.9rem;
+    font-weight: 400;
+  }
+
+  .table-wrap {
+    background: #161b22;
+    border: 1px solid #262c36;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead {
+    background: #1c222b;
+  }
+  th {
+    text-align: left;
+    padding: 0.85rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #7a8294;
+    border-bottom: 1px solid #262c36;
+  }
+  th:last-child { text-align: right; }
+
+  td {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #1e232c;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+
+  .rank-col { width: 3.5rem; text-align: center; }
+  .id-col   { width: 6.5rem; color: #5a6274; font-size: 0.8rem; font-weight: 500; }
+  .name-col { }
+  .xp-col   { width: 5rem; text-align: right; font-weight: 700; }
+
+  .rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #1e232c;
+    color: #7a8294;
+  }
+  .rank-1 { background: #f0b42920; color: #f0b429; }
+  .rank-2 { background: #a0b0c020; color: #a0b0c0; }
+  .rank-3 { background: #cd7f3220; color: #cd7f32; }
+
+  .medal { font-size: 1rem; }
+
+  .xp-positive { color: #3fb950; }
+  .xp-negative { color: #f85149; }
+  .xp-zero     { color: #7a8294; }
+
+  tr.instructor td {
+    background: #1c1515;
+    color: #f8514980;
+    font-style: italic;
+  }
+  tr.instructor .name-col::after {
+    content: " (instructor)";
+    font-size: 0.75rem;
+    color: #f8514960;
+  }
+
+  .footer-note {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #3a4254;
+  }
+
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  .top-bar .status {
+    font-size: 0.75rem;
+    color: #3a4254;
+  }
+  .top-bar .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 5px;
+    background: #3fb950;
+    animation: pulse 1.5s infinite;
+  }
+  .top-bar .dot.off { background: #f85149; animation: none; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .top-bar button {
+    background: #1c222b;
+    border: 1px solid #262c36;
+    color: #7a8294;
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .top-bar button:hover { background: #262c36; color: #e4e7ed; }
+
+  .challenge-card {
+    background: #161b22;
+    border: 1px solid #262c36;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .challenge-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, #f0b429, #f97e3a);
+  }
+  .challenge-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #f0b429;
+    margin-bottom: 0.6rem;
+  }
+  .challenge-label .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #3fb950;
+    animation: pulse 1.5s infinite;
+  }
+  .challenge-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    color: #e4e7ed;
+  }
+  .challenge-meta {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .challenge-tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    background: #1e232c;
+    color: #7a8294;
+  }
+  .challenge-tag.difficulty-easy   { background: #3fb95020; color: #3fb950; }
+  .challenge-tag.difficulty-medium { background: #f0b42920; color: #f0b429; }
+  .challenge-tag.difficulty-hard   { background: #f8514920; color: #f85149; }
+  .challenge-desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #a8b0c0;
+  }
+  .challenge-empty {
+    font-size: 0.85rem;
+    color: #3a4254;
+    font-style: italic;
+  }
+  .challenge-card.flash {
+    animation: flash-highlight 1s ease-out;
+  }
+  @keyframes flash-highlight {
+    0% { box-shadow: 0 0 0 2px #f0b429; }
+    100% { box-shadow: 0 0 0 0px transparent; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🏆 Leaderboard</h1>
+    <p>Agentic AI Internship — Summer 2026</p>
+  </header>
+
+  <div class="top-bar">
+    <span class="status" id="status"><span class="dot" id="dot"></span>loading...</span>
+    <button id="toggleBtn" onclick="togglePolling()">⏸ Pause</button>
+  </div>
+
+  <div class="challenge-card" id="challengeCard">
+    <div class="challenge-label"><span class="live-dot"></span>Current Challenge</div>
+    <div id="challengeBody">
+      <div class="challenge-empty">No challenge generated yet...</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="rank-col">#</th>
+          <th class="id-col">ID</th>
+          <th class="name-col">Name</th>
+          <th class="xp-col">XP</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="footer-note" id="footerNote"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG — point this at your server.py bridge
+// ═══════════════════════════════════════════════════════════
+const API_BASE = "http://localhost:8007";  // your server.py's address
+
+// ── HARDCODED DATA (fallback) ──────────────────────────
+const DEFAULT_DATA = [
+  [26060001, "جنه اسامه محمد يوسف",           0],
+  [26060002, "كريم وائل محمد أبو الفتوح",      0],
+  [26060003, "نور محمد سعيد",                  0],
+  [26060004, "إسراء ناصر مصطفى عبدالواحد",     0],
+  [26060005, "محمد محمود عبد التواب جاد",      0],
+  [26060006, "عمر عبدالناصر عمر محمد",          0],
+  [26060007, "مازن محمد احمد غنيمي",           0],
+  [26060008, "علي محمد احمد علي",              0],
+  [26060009, "جوليي سليم حليم",                0],
+  [26060010, "جايان إسلام محمد محمد عبد المطلب", 0],
+  [26060011, "مريم صابر لبيب",                 0],
+  [26060012, "هند مصطفي سعد",                  0],
+  [26060013, "كارول ماجد جرجس",                0],
+  [26060014, "محمود أيمن محمد",                0],
+  [26060015, "شهد خالد فتحي سيد",              0],
+  [       0, "احمد جمال احمد",               -500],
+];
+
+// ── STATE ──────────────────────────────────────────────
+let pollTimer   = null;
+let isPolling   = true;
+let lastChallengeId = null;
+
+// ── RENDER: CHALLENGE ──────────────────────────────────
+function renderChallenge(challenge) {
+  const body = document.getElementById("challengeBody");
+  const card = document.getElementById("challengeCard");
+
+  if (!challenge) {
+    body.innerHTML = `<div class="challenge-empty">No challenge generated yet...</div>`;
+    return;
+  }
+
+  const { id, topic, difficulty, description } = challenge;
+  const diffClass = `difficulty-${(difficulty || "medium").toLowerCase()}`;
+
+  body.innerHTML = `
+    <div class="challenge-title">${topic || "Untitled Challenge"}</div>
+    <div class="challenge-meta">
+      <span class="challenge-tag ${diffClass}">${difficulty || "medium"}</span>
+    </div>
+    <div class="challenge-desc">${description || ""}</div>
+  `;
+
+  // flash the card when a genuinely new challenge arrives
+  if (id !== undefined && id !== lastChallengeId) {
+    lastChallengeId = id;
+    card.classList.remove("flash");
+    void card.offsetWidth; // restart animation
+    card.classList.add("flash");
+  }
+}
+
+// ── HELPERS ──────────────────────────────────────────────
+function trimName(fullName) {
+  if (!fullName) return "";
+  return fullName.trim().split(/\s+/).slice(0, 2).join(" ");
+}
+
+// ── RENDER ──────────────────────────────────────────────
+function render(rows) {
+  const tbody = document.getElementById("tbody");
+  const sorted = [...rows].sort((a, b) => b[2] - a[2] || a[0] - b[0]);
+  tbody.innerHTML = sorted.map((row, i) => {
+    const [id, name, xp] = row;
+    const rank = i + 1;
+    const isInstructor = id === 0;
+    const displayName = trimName(name);
+
+    let rankHtml;
+    if (rank === 1) rankHtml = `<span class="rank rank-1"><span class="medal">🥇</span></span>`;
+    else if (rank === 2) rankHtml = `<span class="rank rank-2"><span class="medal">🥈</span></span>`;
+    else if (rank === 3) rankHtml = `<span class="rank rank-3"><span class="medal">🥉</span></span>`;
+    else rankHtml = `<span class="rank">${rank}</span>`;
+
+    let xpClass = "xp-zero";
+    if (xp > 0) xpClass = "xp-positive";
+    else if (xp < 0) xpClass = "xp-negative";
+
+    return `<tr class="${isInstructor ? 'instructor' : ''}">
+      <td class="rank-col">${rankHtml}</td>
+      <td class="id-col">${id}</td>
+      <td class="name-col">${displayName}</td>
+      <td class="xp-col ${xpClass}">${xp > 0 ? '+' : ''}${xp}</td>
+    </tr>`;
+  }).join("");
+}
+
+function setStatus(html) {
+  document.getElementById("status").innerHTML = html;
+}
+
+// ── LOAD FROM SERVER (server.py bridges to Redis Cloud) ─
+async function fetchFromServer() {
+  if (!API_BASE) return null;
+
+  try {
+    const res = await fetch(`${API_BASE}/leaderboard`, {
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error("unexpected shape");
+    return data;
+  } catch (e) {
+    console.warn("Server fetch failed:", e);
+    return null;
+  }
+}
+
+// ── LOAD CHALLENGE ──────────────────────────────────────
+async function fetchChallenge() {
+  if (!API_BASE) return null;
+
+  try {
+    const res = await fetch(`${API_BASE}/challenge`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data || Object.keys(data).length === 0) return null;
+    return data;
+  } catch (e) {
+    console.warn("Challenge fetch failed:", e);
+    return null;
+  }
+}
+
+async function loadAll() {
+  const [serverData, challenge] = await Promise.all([
+    fetchFromServer(),
+    fetchChallenge(),
+  ]);
+
+  if (serverData && Array.isArray(serverData) && serverData.length > 0) {
+    render(serverData);
+    document.getElementById("footerNote").textContent =
+      "⚡ Live from Redis Cloud — auto-refreshes every 5s";
+    if (isPolling) setStatus('<span class="dot" id="dot"></span>live');
+  } else {
+    render(DEFAULT_DATA);
+    document.getElementById("footerNote").textContent =
+      "⚠️ Server unavailable — showing local data";
+    if (isPolling) setStatus('<span class="dot off" id="dot"></span>offline');
+  }
+
+  renderChallenge(challenge);
+}
+
+// ── POLLING ────────────────────────────────────────────
+async function poll() {
+  await loadAll();
+  if (isPolling) {
+    pollTimer = setTimeout(poll, 5000);
+  }
+}
+
+function togglePolling() {
+  isPolling = !isPolling;
+  document.getElementById("toggleBtn").textContent = isPolling ? "⏸ Pause" : "▶ Resume";
+  document.getElementById("dot").className = isPolling ? "dot" : "dot off";
+  if (isPolling) {
+    poll();
+  } else {
+    clearTimeout(pollTimer);
+    setStatus('<span class="dot off"></span>paused');
+  }
+}
+
+function init() {
+  if (!API_BASE) {
+    render(DEFAULT_DATA);
+    setStatus("📋 local data (config empty)");
+    document.getElementById("footerNote").textContent =
+      "ℹ️ Set API_BASE above to connect your server";
+    document.getElementById("toggleBtn").style.display = "none";
+    document.getElementById("dot").className = "dot off";
+    return;
+  }
+  poll();
+}
+
+// ── START ──────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
