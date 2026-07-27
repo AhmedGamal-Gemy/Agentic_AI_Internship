@@ -22,14 +22,15 @@ import redis
 
 app = FastAPI()
 
-# # Allow the browser (leaderboard.html) to fetch from this server.
-# # Without this, the fetch silently fails in the browser console only.
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+# Allow the browser (leaderboard.html) to fetch from this server.
+# Without this, the fetch silently fails in the browser console only.
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 
