@@ -1,31 +1,12 @@
 from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
-import redis
-import os
-import json
-
-
-#def push_to_leaderboard(challenge : str) -> str:
-#    """ function to show the challenge """
-
-#    return f"Challenge is {challenge}"
-
-
-
-
-"""
-Real tool implementations for the Challenge Generator agent.
-Replaces the Session 1 stubs (save_to_database, push_to_leaderboard)
-and adds the new exa_search tool.
-
-Drop these functions into challenge_generator/agent.py, replacing the
-stub versions, and add them to the agent's `tools=[...]` list.
-"""
-
-import os
-import requests
 from exa_py import Exa
-
+import os
+import redis
+import requests
+import json
+import asyncio
+    
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8007")
 exa = Exa(api_key=os.getenv("EXA_API_KEY"))
 
@@ -36,6 +17,7 @@ r = redis.Redis(
     password=os.getenv("REDIS_PASSWORD"),
     decode_responses=True,
 )
+
 
 def exa_search(query: str) -> str:
     """Search the web for current, relevant information on a topic.
@@ -61,9 +43,7 @@ def exa_search(query: str) -> str:
     
     return "\n".join(lines) if lines else "No results found."
 
-
-
-def save_to_database(topic: str, difficulty: str, description: str, solution : str) -> str:
+async def save_to_database(topic: str, difficulty: str, description: str, solution : str) -> str:
     """Save a generated challenge to persistent storage.
 
     This keeps a permanent record of every challenge ever generated,
@@ -85,7 +65,9 @@ def save_to_database(topic: str, difficulty: str, description: str, solution : s
         "solution" : solution
         }
 
-    response = requests.post(f"{SERVER_URL}/save", json=payload, timeout=5)
+    response = await asyncio.to_thread(
+        requests.post, f"{SERVER_URL}/save", json=payload, timeout=10
+        )
 
     response.raise_for_status()
 
@@ -93,42 +75,31 @@ def save_to_database(topic: str, difficulty: str, description: str, solution : s
     
     return f"Saved challenge with ID {data['id']}"
 
+async def push_to_leaderboard(topic: str, difficulty: str, description: str, solution: str) -> str:
+    """Post a challenge live to the leaderboard display.
+    This Show the CURRENT challenge on the leaderboard HTML —
+    it updates every five seconds on the html page.
 
-def push_to_leaderboard(topic: str, difficulty: str, description: str, solution: str) -> str:
-     """Post a challenge live to the leaderboard display.
-
-     This sets the CURRENT challenge shown on the leaderboard HTML —
-     it updates within 5 seconds on the projector.
-
-     Args:
-         topic: The challenge topic
-         difficulty: One of "easy", "medium", or "hard"
-         description: The full challenge description
-
-     Returns:
-         Confirmation message
-     """
-     payload = {"topic": topic, "difficulty": difficulty, "description": description, "solution" : solution}
-
-     response = requests.post(f"{SERVER_URL}/challenge", json=payload, timeout=5)
-     if response.status_code != 200:
-         print("VALIDATION ERROR:", response.text)  # shows exactly what's wrong
-     response.raise_for_status()
-    
-     return "Challenge posted to leaderboard live!"
-
-def check_duplicate_challenge(description: str) -> str:
-    """Verify whether a the new challenge is too similar to an existing one..
     Args:
-        new_challenge: The new challenge to check for duplicates
+        topic: challenge topic
+        difficulty: One of "easy", "medium", or "hard"
+        description: The challenge description
+        solution: The challenge solution
+
     Returns:
-     A message indicating whether the challenge is a duplicate or not
+        Confirmation message that the challenge has been pushed to the leaderboard
     """
-    for record in r.lrange("challenge_log", 0, -1):
-        existing_challenge = json.loads(record)
-        if description == existing_challenge["description"]:
-            return "Duplicate challenge found."
-    return "No duplicate challenge found."
+    payload = {"topic": topic, "difficulty": difficulty, "description": description, "solution": solution}
+    response = await asyncio.to_thread(
+    requests.post, f"{SERVER_URL}/challenge", json=payload, timeout=10
+    )
+    if response.status_code != 200:
+        print("ERROR:", response.text)
+        print("STATUS:", response.status_code)
+        print("BODY:", response.text)
+    response.raise_for_status()
+    
+    return "Challenge posted to leaderboard!"
 
 root_agent = Agent(
     model=LiteLlm("groq/llama-3.3-70b-versatile"),
@@ -139,10 +110,9 @@ root_agent = Agent(
 
     1. Call exa_search with a query related to the requested topic. WAIT for the result.
     2. Using the search results, write a challenge with a topic, difficulty, description, and solution.
-    3. Call check_duplicate_challenge with the challenge description to ensure it is not a duplicate.
-    4. Call save_to_database AND push_to_leaderboard TOGETHER in the same turn, both with the same challenge details if it is not a duplicate.
+    3. Call save_to_database AND push_to_leaderboard TOGETHER in the same turn, both with the same challenge details.
 
     Do not call exa_search at the same time as the other tools — it must run first, alone, since you need its results before writing the challenge. But save_to_database and push_to_leaderboard should always be called together in a single turn once the challenge is written.
     """,
-    tools=[save_to_database,exa_search,push_to_leaderboard,check_duplicate_challenge]
+    tools=[exa_search, save_to_database, push_to_leaderboard]
 )
