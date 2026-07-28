@@ -1,27 +1,17 @@
-"""
-server.py — tiny FastAPI bridge between:
-  - the agent's tools (save_to_database, push_to_leaderboard)
-  - leaderboard.html (polls /leaderboard and /challenge every 5s)
-  - Redis Cloud (TCP-only, so the browser can't talk to it directly)
-
-Run with: python server.py
-Or:       uvicorn server:app --reload --port 8000
-"""
-
 import os
 import json
 import time
-
 from fastapi import FastAPI
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import redis
-
 from dotenv import load_dotenv
+
 
 load_dotenv()
 
-#create fastAPI app
+# create FastAPI app
 app = FastAPI()
 
 # Allow the browser (leaderboard.html) to fetch from this server.
@@ -34,26 +24,19 @@ app.add_middleware(
 )
 
 
-
-
 # ── Redis Cloud connection ──────────────────────────────
 # Get these values from your Redis Cloud dashboard: Database > Public endpoint
 r = redis.Redis(
-    host=os.getenv("REDIS_HOST"),
+    host=os.getenv("NOUR"),
     port=int(os.getenv("REDIS_PORT", 6379)),
     username=os.getenv("REDIS_USERNAME"),
     password=os.getenv("REDIS_PASSWORD"),
     decode_responses=True,
 )
 
-
-
-
-
-
 CURRENT_CHALLENGE_KEY = "current_challenge"
 CHALLENGE_LOG_KEY = "challenge_log"       # full history of all generated challenges
-LEADERBOARD_KEY = "leaderboard"           # intern XP data, wired up in a later session
+LEADERBOARD_KEY = "leaderboard"       
 
 
 class Challenge(BaseModel):
@@ -61,19 +44,12 @@ class Challenge(BaseModel):
     difficulty: str
     description: str
     solution: str
-
-
-
-
-
+    
+    
 # ── Health check — test this first, before anything else ─
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-
-
-
 
 
 # ── Called by the agent's save_to_database tool ─────────
@@ -99,6 +75,7 @@ def save_to_database(challenge: Challenge):
 #   "description": "bla bla ",
 #   "solution": "bla bla "
 #   }
+
 
 
     record["saved_at"] = time.time()
@@ -150,7 +127,5 @@ def get_leaderboard():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8007)
-
-
+    uvicorn.run(app, host="0.0.0.0", port=8001)
 
