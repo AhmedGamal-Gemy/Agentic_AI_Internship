@@ -346,7 +346,7 @@ def award_xp(xp: XPAward):
     return {"status": "awarded", "name": xp.name, "total_xp": total_xp}
 
 
-    # return "hhkhhhh"
+    
 
 
 
