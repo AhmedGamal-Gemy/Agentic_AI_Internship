@@ -288,11 +288,6 @@ async def get_github_webhook(request: Request, background_tasks: BackgroundTasks
 
     # print(payload)
 
-
-
-
-
-
     if event_type == "ping":
         print("Received ping — webhook connected successfully!")
         return {"status": "pong"}
@@ -319,6 +314,43 @@ async def get_github_webhook(request: Request, background_tasks: BackgroundTasks
 
 async def handle_push(message_text):
     print(message_text)
+
+
+
+
+
+
+
+
+
+
+
+
+
+class XPAward(BaseModel):
+    name: str
+    xp_awarded: int
+    commit_count: int
+    files_changed: int
+
+@app.post("/xp")
+def award_xp(xp: XPAward):
+    data = r.get(LEADERBOARD_KEY)
+    leaderboard = json.loads(data) if data else []
+    total_xp = 0
+    
+    for entry in leaderboard:
+        if entry[1] == xp.name:
+            entry[2] += xp.xp_awarded
+            total_xp = entry[2]
+            break
+    else:
+        raise HTTPException(status_code=404, detail=f"{xp.name} not on leaderboard — run seed_interns.py?")
+
+    r.set(LEADERBOARD_KEY, json.dumps(leaderboard))
+    return {"status": "awarded", "name": xp.name, "total_xp": total_xp}
+
+
 
 
 if __name__ == "__main__":
