@@ -3,6 +3,9 @@ from google.adk.models.lite_llm import LiteLlm
 from exa_py import Exa
 import os
 import requests 
+import asyncio
+import litellm 
+litellm.num_retries = 10 
 
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8007")
 
@@ -24,12 +27,13 @@ def exa_search(query: str) -> str:
     lines = []
     for item in results.results:
         highlight = item.highlights[0] if item.highlights else ""
+        highlight = highlight[:300]
         lines.append(f"- {item.title}: {highlight}")
     
     return "\n".join(lines) if lines else "No results found."
 
 
-def save_to_database(topic: str, difficulty: str, description: str, solution : str) -> str:
+async def save_to_database(topic: str, difficulty: str, description: str, solution : str) -> str:
     """Save a generated challenge to persistent storage.
 
     This keeps a permanent record of every challenge ever generated,
@@ -51,8 +55,9 @@ def save_to_database(topic: str, difficulty: str, description: str, solution : s
         "solution" : solution
         }
 
-    response = requests.post(f"{SERVER_URL}/save", json=payload, timeout=5)
-
+    response =await asyncio.to_thread(
+        requests.post , f"{SERVER_URL}/save", json=payload, timeout=10)
+    
     response.raise_for_status()
 
     data = response.json()
@@ -60,7 +65,7 @@ def save_to_database(topic: str, difficulty: str, description: str, solution : s
     return f"Saved challenge with ID {data['id']}"
 
 
-def push_to_leaderBoard (topic: str, difficulty: str, description: str, solution : str) ->str:
+async def push_to_leaderBoard (topic: str, difficulty: str, description: str, solution : str) ->str:
     '''
     post new challenges to leaderboard.html 
     updated every 5 seconds 
@@ -78,7 +83,8 @@ def push_to_leaderBoard (topic: str, difficulty: str, description: str, solution
         "solution" : solution
         }
     
-    response = requests.post(f"{SERVER_URL}/challenge" , json=payload , timeout=5)
+    response = await asyncio.to_thread( requests.post , f"{SERVER_URL}/challenge" , json=payload , timeout=5)
+
     if response.status_code != 200:
         print("VALIDATION ERROR:", response.text)
     response.raise_for_status()
@@ -100,3 +106,5 @@ root_agent = Agent(
     ''',
     tools = [exa_search , save_to_database , push_to_leaderBoard ]
 )
+
+# jannahhh

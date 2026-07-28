@@ -8,12 +8,14 @@ Run with: python server.py
 Or:       uvicorn server:app --reload --port 8000
 """
 
+
 import os   # to read from env
 import json # redis save string , dic -> dupm -> str   , <- loads  (req is json)
 import time # time stamp
 # obj -> model_dump -> dic -> json.dumps () -> str
 
 from fastapi import FastAPI 
+
 app = FastAPI() # make a socket 
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -128,11 +130,123 @@ def get_current_challenge () :
         return json.loads(data)   # return as a dictionary
     return {}
 
+from google.adk.runners import InMemoryRunner 
+from google.genai import types
+from agent import root_agent 
+
+def extract_event_info(event) -> dict | None:
+    """Pull out whatever's meaningful from an event: text, tool call, or tool result."""
+    if not event.content or not event.content.parts:
+        return None
+    for part in event.content.parts:
+        if part.text:
+            return {"type": "text", "content": part.text}
+        if part.function_call:
+            return {
+                "type": "tool_call",
+                "tool": part.function_call.name,
+                "args": part.function_call.args,
+            }
+        if part.function_response:
+            return {
+                "type": "tool_result",
+                "tool": part.function_response.name,
+                "result": part.function_response.response,
+            }
+    return None 
+
+runner = InMemoryRunner(agent = root_agent , app_name="coding_challenge")
+# run runner 
+@app.post("/run_agent")
+# diff to every session 
+async def run_agent(user_messege : str) : 
+    session = await runner.session_service.create_session(
+        app_name="coding_challenge" , user_id = "jjjjjjjjj" 
+    )
+    message = types.Content(role="user" , parts=[types.Part(text = user_messege)])
+    # have any type
+    steps = [] 
+    final_text = [] 
+
+    async for event in runner.run_async (
+        user_id = "jjjjjjjjj" , session_id= session.id , new_message= message
+    ):
+        info = extract_event_info(event)
+        if info:
+            print(f"[{info['type']}]", info)
+
+            steps.append(info)
+
+            if info["type"] == "text":
+
+                final_text.append(info["content"])
+
+    return {"response": " ".join(final_text), "steps": steps}
+
 
 # update standing
 @app.get('/leaderboard')
 def get_leaderBoard():
     pass 
+
+from fastapi import Request , BackgroundTasks , HTTPException 
+import hmac 
+import hashlib 
+
+WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET").encode()
+
+def parse_push_payload(payload: dict) -> dict:
+    pusher_name = payload["pusher"]["name"]
+    commits = payload["commits"]
+    commit_count = len(commits)
+
+    files_changed = set()
+
+    for commit in commits:
+        files_changed.update(commit["added"])
+        files_changed.update(commit["modified"])
+        files_changed.update(commit["removed"])
+
+    return {
+        "pusher_name": pusher_name,
+        "commit_count": commit_count,
+        "files_changed": len(files_changed),
+    }
+
+@app.post("/github_webhook")
+async def get_github_webhook(request: Request , background_tasks : BackgroundTasks) :
+    body = await request.body() 
+
+    signature = request.headers.get("X-Hub-Signature-256") # hashed secret
+
+    event_type = request.headers.get("X-Github-Event")
+
+    expected = "sha256="+ hmac.new(WEBHOOK_SECRET , body , hashlib.sha256).hexdigest()
+    if not signature or not hmac.compare_digest(expected , signature):
+        raise HTTPException(status_code= 401 , detail= "Invalid signature")
+
+    payload = await request.json()
+
+    if(event_type == "ping") :
+        print("received ping - webhook connected successfully !")
+        return {"status" : "pong"}
+
+    facts = parse_push_payload(payload) 
+
+    message_text = (
+    f"Pusher: {facts['pusher_name']}. "
+    f"Commits: {facts['commit_count']}. "
+    f"Files changed: {facts['files_changed']}. "
+    f"Evaluate this push and award XP."
+    )
+
+    if event_type == "push":
+       background_tasks.add_task(handle_push, message_text)
+ 
+    return {"status": "received"}
+
+def handle_push(text_msg : str) :
+    print(text_msg)
 
 if __name__ == "__main__":
     import uvicorn
