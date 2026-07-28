@@ -46,8 +46,6 @@ evaluator_agent = Agent(
 
 
 
-
-
 class XPAward(BaseModel):
     name: str
     xp_awarded: int
@@ -58,6 +56,7 @@ class XPAward(BaseModel):
 def award_xp(xp: XPAward):
     data = r.get(LEADERBOARD_KEY)
     leaderboard = json.loads(data) if data else []
+    total_xp = 0
 
     for entry in leaderboard:
         if entry[1] == xp.name:
