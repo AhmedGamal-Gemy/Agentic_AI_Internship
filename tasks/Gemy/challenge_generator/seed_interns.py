@@ -42,6 +42,7 @@ INTERNS = [
     {"id": 14, "name": "Mohammed-Gadd"},
     {"id": 15, "name": "Nourelganainy23"},
     {"id": 16, "name": "shahd-kh"},
+    {"id" : 17, "name":"Gemy"},
 ]
 
 # ── Redis connection (shared instance) ───────────────────
