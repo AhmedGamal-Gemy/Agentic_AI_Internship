@@ -289,7 +289,9 @@ async def get_github_webhook(request: Request, background_tasks: BackgroundTasks
     # print(payload)
 
 
-    
+
+
+
 
     if event_type == "ping":
         print("Received ping — webhook connected successfully!")
@@ -299,10 +301,10 @@ async def get_github_webhook(request: Request, background_tasks: BackgroundTasks
     facts = parse_push_payload(payload)
 
     message_text = (
-        f"Pusher: {facts['pusher_name']}. "
-        f"Commits: {facts['commit_count']}. "
-        f"Files changed: {facts['files_changed']}. "
-        f"Evaluate this push and award XP."
+        f"Pusher: {facts['pusher_name']}.\n"
+        f"Commits: {facts['commit_count']}.\n "
+        f"Files changed: {facts['files_changed']}.\n "
+        f"Evaluate this push and award XP.\n"
     )
 
     if event_type == "push":
@@ -312,11 +314,12 @@ async def get_github_webhook(request: Request, background_tasks: BackgroundTasks
 
 
 
-def handle_push(message_text):
+
+
+
+async def handle_push(message_text):
     print(message_text)
 
-
-    
 
 if __name__ == "__main__":
     import uvicorn
