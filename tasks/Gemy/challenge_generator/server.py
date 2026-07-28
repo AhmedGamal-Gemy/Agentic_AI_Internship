@@ -303,17 +303,12 @@ async def get_github_webhook(request: Request, background_tasks: BackgroundTasks
     )
 
     if event_type == "push":
-        background_tasks.add_task(handle_push, message_text)
+        background_tasks.add_task(handle_push, facts['pusher_name'], message_text)
 
     return {"status": "received"}
 
 
 
-
-
-
-async def handle_push(message_text):
-    print(message_text)
 
 
 
@@ -349,6 +344,44 @@ def award_xp(xp: XPAward):
 
     r.set(LEADERBOARD_KEY, json.dumps(leaderboard))
     return {"status": "awarded", "name": xp.name, "total_xp": total_xp}
+
+
+    # return "hhkhhhh"
+
+
+
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from xp_calculator.agent import root_agent
+
+
+evaluator_runner = InMemoryRunner(agent=root_agent, app_name="xp_evaluator")
+
+def is_known_intern(name: str) -> bool:
+    data = r.get(LEADERBOARD_KEY)
+    return bool(data) and name in {entry[1] for entry in json.loads(data)}
+
+async def handle_push(pusher_name: str, message_text: str):
+    if not is_known_intern(pusher_name):
+        print(f"Ignoring push from {pusher_name} — not a tracked intern.")
+        return
+
+    session = await evaluator_runner.session_service.create_session(
+        app_name="xp_evaluator", user_id=pusher_name
+    )
+    message = types.Content(role="user", parts=[types.Part(text=message_text)])
+
+    async for event in evaluator_runner.run_async(
+        user_id=pusher_name, session_id=session.id, new_message=message
+    ):
+        info = extract_event_info(event)
+        if info:
+            print(f"[{info['type']}]", info)
+            
+
 
 
 
