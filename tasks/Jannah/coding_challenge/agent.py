@@ -6,6 +6,10 @@ import requests
 import asyncio
 import litellm 
 litellm.num_retries = 10 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8007")
 

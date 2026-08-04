@@ -7,7 +7,10 @@ server.py — tiny FastAPI bridge between:
 Run with: python server.py
 Or:       uvicorn server:app --reload --port 8000
 """
+import sys
+from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import os   # to read from env
 import json # redis save string , dic -> dupm -> str   , <- loads  (req is json)
@@ -183,11 +186,21 @@ async def run_agent(user_messege : str) :
 
     return {"response": " ".join(final_text), "steps": steps}
 
+# ── Polled by leaderboard.html every 5 seconds ──────────
 
-# update standing
-@app.get('/leaderboard')
-def get_leaderBoard():
-    pass 
+
+
+# ── Polled by leaderboard.html every 5 seconds ──────────
+# Returns [[id, name, xp], ...] — matches leaderboard.html's expected shape
+@app.get("/leaderboard")
+def get_leaderboard():
+    data = r.get(LEADERBOARD_KEY)
+    if not data:
+        return []  # frontend falls back to DEFAULT_DATA automatically
+    return json.loads(data)
+
+
+
 
 from fastapi import Request , BackgroundTasks , HTTPException 
 import hmac 
@@ -241,12 +254,64 @@ async def get_github_webhook(request: Request , background_tasks : BackgroundTas
     )
 
     if event_type == "push":
-       background_tasks.add_task(handle_push, message_text)
+       background_tasks.add_task(handle_push , facts['pusher_name'], message_text)
  
     return {"status": "received"}
 
-def handle_push(text_msg : str) :
-    print(text_msg)
+
+
+from XP_calc.agent import root_agent  # or just reuse agent.py's import
+
+evaluator_runner = InMemoryRunner(agent=root_agent, app_name="xp_evaluator")
+
+def is_known_intern(name: str) -> bool:
+    data = r.get(LEADERBOARD_KEY)
+    return bool(data) and name in {entry[1] for entry in json.loads(data)}
+
+async def handle_push(pusher_name: str,  message_text: str):
+    if not is_known_intern(pusher_name):
+        print(f"Ignoring push from {pusher_name} — not a tracked intern.")
+        return
+
+    session = await evaluator_runner.session_service.create_session(
+        app_name="xp_evaluator", user_id=pusher_name
+    )
+    message = types.Content(role="user", parts=[types.Part(text=message_text)])
+
+    async for event in evaluator_runner.run_async(
+        user_id=pusher_name, session_id=session.id, new_message=message
+    ):
+        info = extract_event_info(event)
+        if info:
+            print(f"[{info['type']}]", info)
+
+    if event_type == "push":
+       background_tasks.add_task(handle_push, facts["pusher_name"], message_text)
+    
+
+
+class XPAward(BaseModel):
+    name: str
+    xp_awarded: int
+    commit_count: int
+    files_changed: int
+
+@app.post("/xp")
+def award_xp(xp: XPAward):
+    data = r.get(LEADERBOARD_KEY)
+    leaderboard = json.loads(data) if data else []
+
+    for entry in leaderboard:
+        if entry[1] == xp.name:
+            entry[2] += xp.xp_awarded
+            total_xp = entry[2]
+            break
+    else:
+        raise HTTPException(status_code=404, detail=f"{xp.name} not on leaderboard — run seed_interns.py?")
+
+    r.set(LEADERBOARD_KEY, json.dumps(leaderboard))
+    return {"status": "awarded", "name": xp.name, "total_xp": total_xp}
+
 
 if __name__ == "__main__":
     import uvicorn
