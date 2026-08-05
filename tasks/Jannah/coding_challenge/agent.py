@@ -5,7 +5,7 @@ import os
 import requests 
 import asyncio
 import litellm 
-litellm.num_retries = 10 
+# litellm.num_retries = 10 
 
 SERVER_URL = os.getenv("SERVER_URL")
 
