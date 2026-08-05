@@ -6,14 +6,11 @@ import requests
 import asyncio
 import litellm 
 litellm.num_retries = 10 
-from dotenv import load_dotenv
 
-load_dotenv()
-
-
-SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8007")
+SERVER_URL = os.getenv("SERVER_URL")
 
 exa = Exa(api_key=os.getenv("EXA_API_KEY"))
+
 def exa_search(query: str) -> str:
     """Search the web for current, relevant information on a topic.
 
@@ -112,4 +109,3 @@ root_agent = Agent(
 )
 
 # jannahhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
-#JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJj
