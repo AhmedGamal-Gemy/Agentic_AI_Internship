@@ -1,5 +1,5 @@
 """
-server.py — tiny FastAPI bridge between:
+server.py � tiny FastAPI bridge between:
   - the agent's tools (save_to_database, push_to_leaderboard)
   - leaderboard.html (polls /leaderboard and /challenge every 5s)
   - Redis Cloud (TCP-only, so the browser can't talk to it directly)
@@ -41,7 +41,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── Redis Cloud connection ──────────────────────────────
+# ?? Redis Cloud connection ??????????????????????????????
 # Get these values from your Redis Cloud dashboard: Database > Public endpoint
 r = redis.Redis(
     host=os.getenv("REDIS_HOST"),
@@ -50,11 +50,6 @@ r = redis.Redis(
     password=os.getenv("REDIS_PASSWORD"),
     decode_responses=True,
 )
-
-
-
-
-
 
 CURRENT_CHALLENGE_KEY = "current_challenge"
 CHALLENGE_LOG_KEY = "challenge_log"       # full history of all generated challenges
@@ -74,7 +69,7 @@ class Challenge(BaseModel):
 
 
 
-# ── Health check — test this first, before anything else ─
+# ?? Health check � test this first, before anything else ?
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -84,7 +79,7 @@ import time
 import json
 
 
-# ── Called by the agent's save_to_database tool ─────────
+# ?? Called by the agent's save_to_database tool ?????????
 # Persists every challenge ever generated to a Redis list (the permanent record)
 @app.post("/save")
 def save_to_database(challenge: Challenge):
@@ -126,45 +121,34 @@ def save_to_database(challenge: Challenge):
     return {"status": "saved", "id": record["id"]}
 
 
-# # ── Called by the agent's push_to_leaderboard tool ──────
-# # Sets the CURRENT challenge — this is what leaderboard.html displays live
-# @app.post("/challenge")
-# def push_to_leaderboard(challenge: Challenge):
-#     record = challenge.model_dump()
+# ?? Called by the agent's push_to_leaderboard tool ??????
+# Sets the CURRENT challenge � this is what leaderboard.html displays live
+@app.post("/challenge")
+def push_to_leaderboard(challenge: Challenge):
+    record = challenge.model_dump()
 
-#     record["id"] = int(time.time())  # changing id triggers the flash animation
-#     r.set(CURRENT_CHALLENGE_KEY, json.dumps(record))
-#     return {"status": "posted", "id": record["id"]}
-
-
-# # ── Polled by leaderboard.html every 5 seconds ──────────
-# @app.get("/challenge")
-# def get_current_challenge():
-#     data = r.get(CURRENT_CHALLENGE_KEY)
-#     if not data:
-#         return {}
-#     return json.loads(data)
+    record["id"] = int(time.time())  # changing id triggers the flash animation
+    r.set(CURRENT_CHALLENGE_KEY, json.dumps(record))
+    return {"status": "posted", "id": record["id"]}
 
 
-# # ── Polled by leaderboard.html every 5 seconds ──────────
-# # Returns [[id, name, xp], ...] — matches leaderboard.html's expected shape
-# @app.get("/leaderboard")
-# def get_leaderboard():
-#     data = r.get(LEADERBOARD_KEY)
-#     if not data:
-#         return []  # frontend falls back to DEFAULT_DATA automatically
-#     return json.loads(data)
+# ?? Polled by leaderboard.html every 5 seconds ??????????
+@app.get("/challenge")
+def get_current_challenge():
+    data = r.get(CURRENT_CHALLENGE_KEY)
+    if not data:
+        return {}
+    return json.loads(data)
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8012)
-
-
-
-
-    
-
+# ?? Polled by leaderboard.html every 5 seconds ??????????
+# Returns [[id, name, xp], ...] � matches leaderboard.html's expected shape
+@app.get("/leaderboard")
+def get_leaderboard():
+    data = r.get(LEADERBOARD_KEY)
+    if not data:
+        return []  # frontend falls back to DEFAULT_DATA automatically
+    return json.loads(data)
 
 
 
@@ -222,11 +206,12 @@ def extract_event_info(event) -> dict | None:
 
 @app.post("/run_agent")
 async def run_agent(user_message: str):
+
     session = await runner.session_service.create_session(
         app_name="challenge_generator", user_id="manual_trigger"
     )
 
-    massage = types.Content(
+    message = types.Content(
         role="user",
         parts=[
             types.Part(
@@ -246,8 +231,6 @@ async def run_agent(user_message: str):
     ):
 
         info = extract_event_info(event)
-        
-
         if info:
             print(f"[{info['type']}]", info)
             steps.append(info)
@@ -255,3 +238,41 @@ async def run_agent(user_message: str):
                 final_text.append(info["content"])
 
     return {"response": " ".join(final_text), "steps": steps}
+
+
+
+from fastapi import Request, BackgroundTasks, HTTPException
+import hmac
+import hashlib
+import os
+
+WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET").encode()
+
+
+
+@app.post("/github_webhook")
+async def get_github_webhook(request: Request, background_tasks: BackgroundTasks):
+    body = await request.body()
+
+
+    signature = request.headers.get("X-Hub-Signature-256")
+
+    event_type = request.headers.get("X-GitHub-Event")
+
+    expected = "sha256=" + hmac.new(WEBHOOK_SECRET, body, hashlib.sha256).hexdigest()
+
+    if not signature or not hmac.compare_digest(expected, signature): 
+         raise HTTPException(status_code=401, detail="Invalid signature")
+
+    payload = await request.json()
+
+    if event_type == "ping":
+         print("Received ping - webhook connected successfully!")
+         return {"status": "pong"}
+
+
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8012)
