@@ -361,7 +361,6 @@ def award_xp(xp: XPAward):
    
             entry[2] += xp.xp_awarded
             total_xp = entry[2]
-            r.sadd("processed_commits", xp.commit_sha)
 
             update_intern_history(
                 name=xp.name,
@@ -369,6 +368,7 @@ def award_xp(xp: XPAward):
                 commit_count=xp.commit_count,
                 files_changed=xp.files_changed,
             )
+            r.sadd("processed_commits", xp.commit_sha)
             break
     else:
         return {"status": "failed", "name": xp.name, "error": "Maybe the name is not there?"}
