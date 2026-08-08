@@ -327,20 +327,26 @@ class XPAward(BaseModel):
     xp_awarded: int
     commit_count: int
     files_changed: int
+    commit_sha : str
 
 @app.post("/xp")
 def award_xp(xp: XPAward):
     data = r.get(LEADERBOARD_KEY)
     leaderboard = json.loads(data) if data else []
     total_xp = 0
+
     
     for entry in leaderboard:
         if entry[1] == xp.name:
+            if r.sismember("processed_commits", xp.commit_sha):
+                return f"Already processed commit {xp.commit_sha} — no XP awarded (already recorded)."
+   
             entry[2] += xp.xp_awarded
             total_xp = entry[2]
+            r.sadd("processed_commits", xp.commit_sha)
             break
     else:
-        raise HTTPException(status_code=404, detail=f"{xp.name} not on leaderboard — run seed_interns.py?")
+        return {"status": "failed", "name": xp.name, "error": "Maybe the name is not there?"}
 
     r.set(LEADERBOARD_KEY, json.dumps(leaderboard))
     return {"status": "awarded", "name": xp.name, "total_xp": total_xp}

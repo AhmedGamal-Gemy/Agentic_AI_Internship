@@ -47,6 +47,7 @@ root_agent = Agent(
         "1. Decide a fair XP amount from commit_count and files_changed.\n"
         "2. Call assign_xp exactly once with the intern's name and your XP decision.\n"
         "Always use the provided tools rather than describing function calls in text."
+        "Call assign_xp exactly ONCE per push. Once you receive a successful tool result, you are done — respond with a short confirmation and STOP. Do not call assign_xp again for the same push, even if you think a different amount would be more fair."
     ),
     tools = [assign_xp]
 )
