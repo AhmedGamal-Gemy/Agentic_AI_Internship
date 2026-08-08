@@ -41,6 +41,9 @@ async def assign_xp(name: str, xp_awarded: int, commit_count: int, files_changed
 
 
 
+
+
+
 root_agent = Agent(
     model=LiteLlm("groq/llama-3.3-70b-versatile"),
     name='root_agent',
