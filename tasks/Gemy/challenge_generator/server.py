@@ -267,6 +267,8 @@ def parse_push_payload(payload: dict) -> dict:
         "pusher_name": pusher_name,
         "commit_count": commit_count,
         "files_changed": len(files_changed),
+        "commit_shas": [commit["sha"] for commit in commits],
+        "head_sha": payload.get("after") or "",
     }
 
 
@@ -297,13 +299,20 @@ async def get_github_webhook(request: Request, background_tasks: BackgroundTasks
 
     message_text = (
         f"Pusher: {facts['pusher_name']}.\n"
-        f"Commits: {facts['commit_count']}.\n "
-        f"Files changed: {facts['files_changed']}.\n "
+        f"Commits: {facts['commit_count']}.\n"
+        f"Commit shas: {facts['commit_shas']}.\n"
+        f"Push head sha (identifies this push — pass it as commit_sha): {facts['head_sha']}.\n"
+        f"Files changed: {facts['files_changed']}.\n"
+
         f"Evaluate this push and award XP.\n"
     )
 
     if event_type == "push":
-        background_tasks.add_task(handle_push, facts['pusher_name'], message_text)
+        if facts["head_sha"] and r.sismember("processed_pushes", facts["head_sha"]):
+            print(f"Duplicate push {facts['head_sha']} — already evaluated, skipping.")
+            return {"status": "duplicate"}
+
+        background_tasks.add_task(handle_push, facts['pusher_name'], message_text, facts["head_sha"])
 
     return {"status": "received"}
 
@@ -373,7 +382,7 @@ def is_known_intern(name: str) -> bool:
     data = r.get(LEADERBOARD_KEY)
     return bool(data) and name in {entry[1] for entry in json.loads(data)}
 
-async def handle_push(pusher_name: str, message_text: str):
+async def handle_push(pusher_name: str, message_text: str, head_sha: str = ""):
     if not is_known_intern(pusher_name):
         print(f"Ignoring push from {pusher_name} — not a tracked intern.")
         return
@@ -389,6 +398,10 @@ async def handle_push(pusher_name: str, message_text: str):
         info = extract_event_info(event)
         if info:
             print(f"[{info['type']}]", info)
+
+    # after the loop on purpose: a crashed run stays unmarked so a retried delivery re-evaluates it
+    if head_sha:
+        r.sadd("processed_pushes", head_sha)
             
 
 
