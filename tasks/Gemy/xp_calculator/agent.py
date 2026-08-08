@@ -3,10 +3,13 @@ from google.adk.models.lite_llm import LiteLlm
 import requests
 import asyncio
 import os
+from challenge_generator.agent import SERVER_URL
+
 
 SERVER_URL = os.getenv("SERVER_URL")
 
 
+# user -> push -> github -> webhook -> push callback -> server -> run agent ( using runner ) -> update redis. 
 
 async def assign_xp(name: str, xp_awarded: int, commit_count: int, files_changed: int) -> str:
     """Award XP to an intern for a push.
