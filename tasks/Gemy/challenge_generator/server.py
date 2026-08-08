@@ -267,7 +267,7 @@ def parse_push_payload(payload: dict) -> dict:
         "pusher_name": pusher_name,
         "commit_count": commit_count,
         "files_changed": len(files_changed),
-        "commit_shas": [commit["sha"] for commit in commits],
+        "commit_shas": [commit.get("id") or commit.get("sha") for commit in commits],
         "head_sha": payload.get("after") or "",
     }
 
