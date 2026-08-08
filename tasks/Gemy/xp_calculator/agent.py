@@ -7,9 +7,11 @@ from challenge_generator.agent import SERVER_URL
 
 
 SERVER_URL = os.getenv("SERVER_URL")
+# added 5 files 
+# modified 4 files
 
 
-# user -> push -> github -> webhook -> push callback -> server -> run agent ( using runner ) -> update redis. 
+# user -> push -> github -> webhook -> push callback -> server -> run agent ( tool -> server ) ( using runner ) -> update redis. 
 
 async def assign_xp(name: str, xp_awarded: int, commit_count: int, files_changed: int, commit_sha: str) -> str:
     """Award XP to an intern for a push.
@@ -53,3 +55,4 @@ root_agent = Agent(
     ),
     tools = [assign_xp]
 )
+

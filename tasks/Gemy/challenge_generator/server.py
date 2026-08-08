@@ -171,6 +171,7 @@ def get_leaderboard():
 
 
 
+
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 from agent import root_agent
@@ -218,7 +219,8 @@ async def run_agent(user_message: str):
         ]
 
     )
-    
+
+    # more than one agent. in the same chat.
 
     steps = []
     final_text = []
@@ -272,7 +274,7 @@ def parse_push_payload(payload: dict) -> dict:
     }
 
 
-
+# github -> /github_webhook
 
 @app.post("/github_webhook")
 async def get_github_webhook(request: Request, background_tasks: BackgroundTasks):
@@ -294,8 +296,13 @@ async def get_github_webhook(request: Request, background_tasks: BackgroundTasks
         print("Received ping — webhook connected successfully!")
         return {"status": "pong"}
 
+    if event_type != "push":
+        return {"status": "ignored", "event": event_type}
 
     facts = parse_push_payload(payload)
+
+    if not facts["commit_shas"]:
+        return {"status": "ignored", "reason": "no commits (e.g. branch deletion)"}
 
     message_text = (
         f"Pusher: {facts['pusher_name']}.\n"
@@ -307,12 +314,11 @@ async def get_github_webhook(request: Request, background_tasks: BackgroundTasks
         f"Evaluate this push and award XP.\n"
     )
 
-    if event_type == "push":
-        if facts["head_sha"] and r.sismember("processed_pushes", facts["head_sha"]):
-            print(f"Duplicate push {facts['head_sha']} — already evaluated, skipping.")
-            return {"status": "duplicate"}
+    if facts["head_sha"] and r.sismember("processed_pushes", facts["head_sha"]):
+        print(f"Duplicate push {facts['head_sha']} — already evaluated, skipping.")
+        return {"status": "duplicate"}
 
-        background_tasks.add_task(handle_push, facts['pusher_name'], message_text, facts["head_sha"])
+    background_tasks.add_task(handle_push, facts['pusher_name'], message_text, facts["head_sha"])
 
     return {"status": "received"}
 
@@ -410,7 +416,7 @@ async def handle_push(pusher_name: str, message_text: str, head_sha: str = ""):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8009)
+    uvicorn.run(app, host="0.0.0.0", port=8011)
 
 
 
