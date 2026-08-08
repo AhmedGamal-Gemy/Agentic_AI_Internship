@@ -1,12 +1,13 @@
 from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
-import requests
-import asyncio
 import os
-
+import asyncio
+import requests 
+import os
+from dotenv import load_dotenv
+load_dotenv()
 SERVER_URL = os.getenv("SERVER_URL")
-
-
+print("SERVER_URL:", SERVER_URL) 
 
 async def assign_xp(name: str, xp_awarded: int, commit_count: int, files_changed: int) -> str:
     """Award XP to an intern for a push.
@@ -33,17 +34,25 @@ async def assign_xp(name: str, xp_awarded: int, commit_count: int, files_changed
     return f"Awarded {xp_awarded} XP to {name}. New total: {data['total_xp']}."
 
 
-
 root_agent = Agent(
     model=LiteLlm("groq/llama-3.3-70b-versatile"),
-    name='root_agent',
-    description='A helpful assistant for user questions.',
+    name="XP_calc",
+    description="Evaluates a GitHub push and awards XP to the intern who made it.",
     instruction=(
-        "You evaluate one GitHub push and award XP to the intern who made it.\n"
-        "You'll receive their name, commit count, and files changed.\n"
-        "1. Decide a fair XP amount from commit_count and files_changed.\n"
-        "2. Call assign_xp exactly once with the intern's name and your XP decision.\n"
-        "Always use the provided tools rather than describing function calls in text."
+    "You are an XP evaluator.\n"
+    "You will receive a GitHub push summary.\n"
+    "Your ONLY job is to call the assign_xp tool exactly ONE time, then stop.\n\n"
+    "Rules:\n"
+    "- Call assign_xp exactly once with the correct name, xp_awarded, "
+    "commit_count, and files_changed.\n"
+    "- After the tool returns a result, reply with a single short "
+    "confirmation sentence (e.g. 'Awarded 5 XP to gannaosama137.') and stop.\n"
+    "- Do NOT call assign_xp again after it has returned a result, even if "
+    "you're unsure the first call succeeded.\n"
+    "- The name argument must be exactly the GitHub username received.\n"
+    "- xp_awarded must be an integer.\n"
     ),
-    tools = [assign_xp]
+    tools=[assign_xp],
 )
+# JJJJJJJJ 
+# GADBrgioerogjesrojo

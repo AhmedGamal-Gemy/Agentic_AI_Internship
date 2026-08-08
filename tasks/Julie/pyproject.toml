@@ -1,10 +1,10 @@
 [project]
 name = "julie"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
-    "google-adk[extensions]>=2.5.0",
-    "litellm>=1.93.0",
+    "exa-py>=2.16.2",
+    "google-adk>=2.6.0",
+    "litellm>=1.94.1",
+    "redis>=8.1.0",
 ]

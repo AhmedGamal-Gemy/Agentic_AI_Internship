@@ -8,61 +8,63 @@ Run with: python server.py
 Or:       uvicorn server:app --reload --port 8000
 """
 
+import os
+# import json
+# import time
 
-import os   # to read from env
-import json # redis save string , dic -> dupm -> str   , <- loads  (req is json)
-import time # time stamp
-# obj -> model_dump -> dic -> json.dumps () -> str
+from fastapi import FastAPI
 
-from fastapi import FastAPI 
 
-app = FastAPI() # make a socket 
-
-from fastapi.middleware.cors import CORSMiddleware
-
-from pydantic import BaseModel 
+# from fastapi.middleware.cors import CORSMiddleware
 import redis
 
-from dotenv import load_dotenv
-load_dotenv() # load data before getenv
 
-# request -> middleware(acc or reject , add inf , edit) -> server(endpoint)
-# origin (protocol , domain & port ) -> if diff port : diff origin 
-# CROS Error : if going to server in different origin , this server must give you access
+
+app = FastAPI()
 
 # Allow the browser (leaderboard.html) to fetch from this server.
 # Without this, the fetch silently fails in the browser console only.
+from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # all origins 
-    allow_methods=["*"], # GET , POST , PUT , DELETE , PATCH
-    allow_headers=["*"], 
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# db connection
+
+
+
+import os
+import redis
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # ── Redis Cloud connection ──────────────────────────────
 # Get these values from your Redis Cloud dashboard: Database > Public endpoint
 r = redis.Redis(
     host=os.getenv("REDIS_HOST"),
-    port=int(os.getenv("REDIS_PORT", 6379)), # redis default port  , return str
-    username=os.getenv("REDIS_USERNAME"), 
+    port=int(os.getenv("REDIS_PORT", 6379)),
+    username=os.getenv("REDIS_USERNAME"),
     password=os.getenv("REDIS_PASSWORD"),
-    decode_responses=True,  # redis return data in bytes ("hello" ->b"hello") , so decode it to str
+    decode_responses=True,
 )
 
 
 
 
-CURRENT_CHALLENGE_KEY = "current_challenge" #  curr -> use set (delete last)
-CHALLENGE_LOG_KEY = "challenge_log"       # full history of all generated challenges use rpush
+
+
+CURRENT_CHALLENGE_KEY = "current_challenge"
+CHALLENGE_LOG_KEY = "challenge_log"       # full history of all generated challenges
 LEADERBOARD_KEY = "leaderboard"           # intern XP data, wired up in a later session
 
 
- # validation (no missing input) 
- # change from json(input) to object 
- # type converion if can(str to int) 
- # model dump 
- # dictionary  
+
+from pydantic import BaseModel
+
 class Challenge(BaseModel):
     topic: str
     difficulty: str
@@ -70,11 +72,17 @@ class Challenge(BaseModel):
     solution: str
 
 
+
+
+
 # ── Health check — test this first, before anything else ─
-# check server not redis
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+import time
+import json
 
 
 # ── Called by the agent's save_to_database tool ─────────
@@ -82,7 +90,8 @@ def health():
 @app.post("/save")
 def save_to_database(challenge: Challenge):
 
-    record = challenge.model_dump() #obj -> dic
+    record = challenge.model_dump()
+
 #   record = {
 #   "topic": "div in html",
 #   "difficulty": "easy",
@@ -91,6 +100,7 @@ def save_to_database(challenge: Challenge):
 #   }
 
     record["id"] = r.incr("challenge_counter")
+
 #   record = {
 #   "id" : 5
 #   "topic": "div in html",
@@ -99,8 +109,9 @@ def save_to_database(challenge: Challenge):
 #   "solution": "bla bla "
 #   }
 
+
     record["saved_at"] = time.time()
-#   using unix timestamp
+
 #    record = {
 #   "id" : 1,
 #   "saved_at" : "8:11"  
@@ -110,34 +121,68 @@ def save_to_database(challenge: Challenge):
 #   "solution": "bla bla "
 #   }
 
+
     r.rpush(CHALLENGE_LOG_KEY, json.dumps(record))
 
     return {"status": "saved", "id": record["id"]}
 
-# called by agent to save in leaderBoard
+
+# ── Called by the agent's push_to_leaderboard tool ──────
+# Sets the CURRENT challenge — this is what leaderboard.html displays live
 @app.post("/challenge")
-def push_to_leaderBoard(challenge : Challenge) :
+def push_to_leaderboard(challenge: Challenge):
+
     record = challenge.model_dump()
-    record['id'] = int(time.time())
-    r.set(CURRENT_CHALLENGE_KEY , json.dumps(record))
-    return {'status':'done' , 'id' : record['id']}
 
-#chech current challenge by leaderboard 
-@app.get('/challenge')
-def get_current_challenge () :
-    data = r.get(CURRENT_CHALLENGE_KEY) # return str
-    if data :
-        return json.loads(data)   # return as a dictionary
-    return {}
+    record["id"] = int(time.time())  # changing id triggers the flash animation
 
-from google.adk.runners import InMemoryRunner 
+    r.set(CURRENT_CHALLENGE_KEY, json.dumps(record))
+
+    return {"status": "posted", "id": record["id"]}
+
+
+
+
+# ── Polled by leaderboard.html every 5 seconds ──────────
+@app.get("/challenge")
+def get_current_challenge():
+    data = r.get(CURRENT_CHALLENGE_KEY)
+    if not data:
+        return {}
+    return json.loads(data)
+
+
+
+
+# ── Polled by leaderboard.html every 5 seconds ──────────
+# Returns [[id, name, xp], ...] — matches leaderboard.html's expected shape
+@app.get("/leaderboard")
+def get_leaderboard():
+    data = r.get(LEADERBOARD_KEY)
+    if not data:
+        return []  # frontend falls back to DEFAULT_DATA automatically
+    return json.loads(data)
+
+
+
+
+
+
+
+
+
+from google.adk.runners import InMemoryRunner
 from google.genai import types
-from agent import root_agent 
+from agent import root_agent
+
+runner = InMemoryRunner(agent=root_agent, app_name="challenge_generator")
+
 
 def extract_event_info(event) -> dict | None:
     """Pull out whatever's meaningful from an event: text, tool call, or tool result."""
     if not event.content or not event.content.parts:
         return None
+
     for part in event.content.parts:
         if part.text:
             return {"type": "text", "content": part.text}
@@ -153,47 +198,59 @@ def extract_event_info(event) -> dict | None:
                 "tool": part.function_response.name,
                 "result": part.function_response.response,
             }
-    return None 
+    return None
 
-runner = InMemoryRunner(agent = root_agent , app_name="coding_challenge")
-# run runner 
+
 @app.post("/run_agent")
-# diff to every session 
-async def run_agent(user_messege : str) : 
-    session = await runner.session_service.create_session(
-        app_name="coding_challenge" , user_id = "jjjjjjjjj" 
-    )
-    message = types.Content(role="user" , parts=[types.Part(text = user_messege)])
-    # have any type
-    steps = [] 
-    final_text = [] 
+async def run_agent(user_message: str):
 
-    async for event in runner.run_async (
-        user_id = "jjjjjjjjj" , session_id= session.id , new_message= message
+    session = await runner.session_service.create_session(
+        app_name="challenge_generator", user_id="manual_trigger"
+    )
+
+    message = types.Content(
+
+        role="user", 
+        parts=[
+            types.Part(
+                text=user_message
+                )
+        ]
+
+    )
+    
+
+    steps = []
+    final_text = []
+
+    async for event in runner.run_async(
+        user_id="manual_trigger", session_id=session.id, new_message=message
     ):
+
+        # print(event)
+
         info = extract_event_info(event)
         if info:
             print(f"[{info['type']}]", info)
-
             steps.append(info)
-
             if info["type"] == "text":
-
                 final_text.append(info["content"])
 
     return {"response": " ".join(final_text), "steps": steps}
 
 
-# update standing
-@app.get('/leaderboard')
-def get_leaderBoard():
-    pass 
 
-from fastapi import Request , BackgroundTasks , HTTPException 
-import hmac 
-import hashlib 
+# coding -> push -> github -> Finish -> /run_agent -> i received 
+
+
+from fastapi import Request, BackgroundTasks, HTTPException
+import hmac
+import hashlib
+import os
 
 WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET").encode()
+
+
 
 def parse_push_payload(payload: dict) -> dict:
     pusher_name = payload["pusher"]["name"]
@@ -201,7 +258,6 @@ def parse_push_payload(payload: dict) -> dict:
     commit_count = len(commits)
 
     files_changed = set()
-
     for commit in commits:
         files_changed.update(commit["added"])
         files_changed.update(commit["modified"])
@@ -213,43 +269,126 @@ def parse_push_payload(payload: dict) -> dict:
         "files_changed": len(files_changed),
     }
 
+
+# Janna 
+
 @app.post("/github_webhook")
-async def get_github_webhook(request: Request , background_tasks : BackgroundTasks) :
-    body = await request.body() 
+async def get_github_webhook(request: Request, background_tasks: BackgroundTasks):
+    body = await request.body()
 
-    signature = request.headers.get("X-Hub-Signature-256") # hashed secret
+    signature = request.headers.get("X-Hub-Signature-256")
 
-    event_type = request.headers.get("X-Github-Event")
+    event_type = request.headers.get("X-GitHub-Event")
 
-    expected = "sha256="+ hmac.new(WEBHOOK_SECRET , body , hashlib.sha256).hexdigest()
-    if not signature or not hmac.compare_digest(expected , signature):
-        raise HTTPException(status_code= 401 , detail= "Invalid signature")
+    expected = "sha256=" + hmac.new(WEBHOOK_SECRET, body, hashlib.sha256).hexdigest()
+    if not signature or not hmac.compare_digest(expected, signature):
+        raise HTTPException(status_code=401, detail="Invalid signature")
 
     payload = await request.json()
 
-    if(event_type == "ping") :
-        print("received ping - webhook connected successfully !")
-        return {"status" : "pong"}
+    # print(payload)
 
-    facts = parse_push_payload(payload) 
+    if event_type == "ping":
+        print("Received ping — webhook connected successfully!")
+        return {"status": "pong"}
+
+
+    facts = parse_push_payload(payload)
 
     message_text = (
-    f"Pusher: {facts['pusher_name']}. "
-    f"Commits: {facts['commit_count']}. "
-    f"Files changed: {facts['files_changed']}. "
-    f"Evaluate this push and award XP."
+        f"Pusher: {facts['pusher_name']}.\n"
+        f"Commits: {facts['commit_count']}.\n "
+        f"Files changed: {facts['files_changed']}.\n "
+        f"Evaluate this push and award XP.\n"
     )
 
     if event_type == "push":
-       background_tasks.add_task(handle_push, message_text)
- 
+        background_tasks.add_task(handle_push, facts['pusher_name'], message_text)
+
     return {"status": "received"}
 
-def handle_push(text_msg : str) :
-    print(text_msg)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class XPAward(BaseModel):
+    name: str
+    xp_awarded: int
+    commit_count: int
+    files_changed: int
+
+@app.post("/xp")
+def award_xp(xp: XPAward):
+    data = r.get(LEADERBOARD_KEY)
+    leaderboard = json.loads(data) if data else []
+    total_xp = 0
+    
+    for entry in leaderboard:
+        if entry[1] == xp.name:
+            entry[2] += xp.xp_awarded
+            total_xp = entry[2]
+            break
+    else:
+        raise HTTPException(status_code=404, detail=f"{xp.name} not on leaderboard — run seed_interns.py?")
+
+    r.set(LEADERBOARD_KEY, json.dumps(leaderboard))
+    return {"status": "awarded", "name": xp.name, "total_xp": total_xp}
+
+
+    
+
+
+
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from XP_calc.agent import root_agent
+
+evaluator_runner = InMemoryRunner(agent=root_agent, app_name="xp_evaluator")
+
+def is_known_intern(name: str) -> bool:
+    data = r.get(LEADERBOARD_KEY)
+    return bool(data) and name in {entry[1] for entry in json.loads(data)}
+
+async def handle_push(pusher_name: str, message_text: str):
+    if not is_known_intern(pusher_name):
+        print(f"Ignoring push from {pusher_name} — not a tracked intern.")
+        return
+
+    session = await evaluator_runner.session_service.create_session(
+        app_name="xp_evaluator", user_id=pusher_name
+    )
+    message = types.Content(role="user", parts=[types.Part(text=message_text)])
+
+    async for event in evaluator_runner.run_async(
+        user_id=pusher_name, session_id=session.id, new_message=message
+    ):
+        info = extract_event_info(event)
+        if info:
+            print(f"[{info['type']}]", info)
+            
+
+
+
+
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8007)
 
-    # hgjdtroibriobo
+
+
+# iugjiutgjrgjresjgtbetjsioj
