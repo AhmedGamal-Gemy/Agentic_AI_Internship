@@ -7,7 +7,6 @@ import requests
 import asyncio
 import litellm
 litellm.num_retries = 10
-
 def calc(num1:int,num2:int,op:str):
     if(op=="+"):
         return num1+num2
@@ -53,6 +52,7 @@ def exa_search(query: str) -> str:
         lines.append(f"- {item.title}: {highlight}")
     
     return "\n".join(lines) if lines else "No results found."
+
 
 
 async def save_to_database(topic: str, difficulty: str, description: str, solution : str) -> str:
@@ -114,10 +114,6 @@ async def push_to_leaderboard(topic: str, difficulty: str, description: str, sol
 
 def check_duplicate_challenge():
     pass
-
-
-
-
 
 root_agent = Agent(
     model=LiteLlm("groq/llama-3.3-70b-versatile"),

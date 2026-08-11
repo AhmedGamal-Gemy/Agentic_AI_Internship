@@ -26,7 +26,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
-)
+) #dy bt5lly ay 7d mn elfront (html) y2dr yaccess elserver bta3y
 
 
 
@@ -211,7 +211,7 @@ import hmac
 import hashlib
 # import os
 
-
+# يجب أن يكون نفس الـ Secret الموجود في GitHub Webhook
 WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "").encode()
 
 
@@ -239,14 +239,14 @@ async def get_github_webhook(
     request: Request,
     background_tasks: BackgroundTasks, #BackgroundTasks dy btbyn an i recieved the request
 ):
-   
+    # قراءة الـ Body الخام
     body = await request.body()
 
-   
+    # قراءة الـ Headers
     signature = request.headers.get("X-Hub-Signature-256") #emda 3obara 3n el secret bs m3molo encreyption
     event_type = request.headers.get("X-GitHub-Event")
 
-   
+    # حساب الـ Signature المتوقع
     expected = (
         "sha256="
         + hmac.new(
@@ -256,17 +256,17 @@ async def get_github_webhook(
         ).hexdigest()
     )
 
-   
+    # التحقق من صحة الـ Signature
     if not signature or not hmac.compare_digest(expected, signature):
         raise HTTPException(
             status_code=401,
             detail="Invalid signature",
         ) #mn awl expected l8ayt hna dy kolha 5assa bel security
 
-  
+    # تحويل الـ Body إلى JSON
     payload = await request.json()
     # print(payload)
-   
+    # إذا كان الحدث Push
     if event_type == "ping":
         print("Received ping - webhook connected successfully!")
         return {"status":"pong"}
@@ -288,6 +288,33 @@ async def get_github_webhook(
 
 def handle_push(message_text):
     print(message_text)
+
+
+
+
+class XPAward(BaseModel):
+    name:str
+    xp_awarded: int 
+    commit_count:int
+    files_changed:int
+
+@app.post("/xp")
+def award_xp(xp:XPAward):
+    data=r.get(LEADERBOARD_KEY) 
+    leaderboard= json.loads(data) if data else []
+    total_xp = 0
+    
+    for entry in leaderboard:
+        if entry[1] == xp.name:
+            entry[2] += xp.xp_awarded
+            total_xp = entry[2]
+            break
+    else:
+            raise HTTPException(status_code=404 , detail= f"{xp.name} not on leaderboard — run seed_interns.py?")  #lma eltool btdrb w msh bt4t8l btrg3 404 
+
+
+    r.set(LEADERBOARD_KEY,json.dumps(leaderboard))
+    return {"status" :"awarded" , "name" :xp.name , "total_xp": total_xp}
 
 if __name__ == "__main__":
     import uvicorn
