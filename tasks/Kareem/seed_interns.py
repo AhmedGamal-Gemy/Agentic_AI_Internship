@@ -44,6 +44,6 @@ if __name__ == "__main__":
     r_client = get_redis()
     if r_client:
         r_client.set("leaderboard", json.dumps(DEFAULT_INTERNS))
-        print("Leaderboard seeded on Redis!")
+        print("Leaderboard seeded!")
     else:
-        print("No Redis connection — run the server and it will use in-memory defaults.")
+        print("No Redis connection.")

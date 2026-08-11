@@ -2,22 +2,15 @@ import os
 import requests
 import asyncio
 from dotenv import load_dotenv
-
-load_dotenv()
-
 from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
+
+load_dotenv()
 
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8008")
 
 
 def analyze_code_quality(code: str, language: str = "python") -> str:
-    """Analyze code structure, complexity, and best practices.
-
-    Args:
-        code: The code submission to analyze.
-        language: Programming language (default: python).
-    """
     lines = [l for l in code.splitlines() if l.strip() and not l.strip().startswith("#")]
     word_count = len(code.split())
     has_type_hints = "->" in code or ": " in code
@@ -25,14 +18,10 @@ def analyze_code_quality(code: str, language: str = "python") -> str:
     has_error_handling = any(kw in code for kw in ["try", "except", "raise", "if not"])
 
     score = 50
-    if len(lines) > 5:
-        score += 10
-    if has_type_hints:
-        score += 15
-    if has_docstring:
-        score += 15
-    if has_error_handling:
-        score += 10
+    if len(lines) > 5: score += 10
+    if has_type_hints: score += 15
+    if has_docstring: score += 15
+    if has_error_handling: score += 10
 
     label = "EXCELLENT" if score >= 85 else "GOOD" if score >= 65 else "NEEDS_IMPROVEMENT"
 
@@ -44,13 +33,6 @@ def analyze_code_quality(code: str, language: str = "python") -> str:
 
 
 async def award_solution_bonus(intern_name: str, quality_score: int, feedback: str) -> str:
-    """Award bonus XP for a reviewed solution submission.
-
-    Args:
-        intern_name: GitHub username of the intern.
-        quality_score: Score out of 100.
-        feedback: Constructive review feedback.
-    """
     bonus_xp = max(5, min(50, int(quality_score * 0.4)))
     payload = {
         "intern_name": intern_name,
@@ -59,9 +41,7 @@ async def award_solution_bonus(intern_name: str, quality_score: int, feedback: s
         "feedback": feedback,
     }
     try:
-        response = await asyncio.to_thread(
-            requests.post, f"{SERVER_URL}/solution_review", json=payload, timeout=10
-        )
+        response = await asyncio.to_thread(requests.post, f"{SERVER_URL}/solution_review", json=payload, timeout=10)
         response.raise_for_status()
         return f"Awarded {bonus_xp} bonus XP to {intern_name}. Review saved."
     except Exception as e:
@@ -74,9 +54,9 @@ root_agent = Agent(
     description="Reviews intern code submissions and awards quality bonus XP.",
     instruction=(
         "You review intern coding submissions for accuracy, quality, and performance.\n"
-        "1. Call `analyze_code_quality` on the submitted code.\n"
+        "1. Call analyze_code_quality on the submitted code.\n"
         "2. Write clear, constructive feedback.\n"
-        "3. Call `award_solution_bonus` with the intern's name, a score (0-100), and your feedback.\n"
+        "3. Call award_solution_bonus with the intern's name, a score (0-100), and your feedback.\n"
         "Always use the provided tools."
     ),
     tools=[analyze_code_quality, award_solution_bonus],
