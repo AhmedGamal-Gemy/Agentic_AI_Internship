@@ -180,7 +180,7 @@ async def run_agent(user_message: str):
 
     session = await runner.session_service.create_session( #await msh bt3ml block llexecuation lw 7sl moshkla f btstna w da far3 mn elbrmaga asmo async programming 3shan kda mst5dmen async def
         app_name="challenge_generator",
-        user_id="jjjjjjjjjjjj"
+        user_id="manual_trigger"
     ) #hna 3mlna initialization l session gdeda best5dam el runner
 
     message = types.Content( #bn3ml message 3shan el runner yst3mlo 3latoul felrun
@@ -297,7 +297,7 @@ async def get_github_webhook(
     background_tasks.add_task(handle_push,facts['pusher_name'],message_text, facts["head_sha"])
 
 # def handle_push(message_text):
-#     print(message_text)
+    print(message_text)
 
 
 
@@ -307,6 +307,7 @@ class XPAward(BaseModel):
     xp_awarded: int 
     commit_count:int
     files_changed:int
+    commit_sha:str
 
 @app.post("/xp")
 def award_xp(xp:XPAward):
@@ -375,5 +376,5 @@ async def handle_push(pusher_name: str, message_text: str, head_sha: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8009)
+    uvicorn.run(app, host="0.0.0.0", port=8010)
 
