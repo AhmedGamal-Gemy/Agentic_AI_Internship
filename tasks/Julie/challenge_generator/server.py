@@ -231,8 +231,11 @@ def parse_push_payload(payload: dict) -> dict:
         "pusher_name": pusher_name,
         "commit_count": commit_count,
         "files_changed": len(files_changed),
+        "commit_shas":[commit.get("id") or commit.get("sha") for commit in commits], #7aga zy id lkol commit
+        "head_sha":payload.get("after") or "", #7aga zy id llwad3 el7aly
     }
 
+#github -> /github_webhook
 
 @app.post("/github_webhook")
 async def get_github_webhook(
@@ -244,7 +247,7 @@ async def get_github_webhook(
 
     # قراءة الـ Headers
     signature = request.headers.get("X-Hub-Signature-256") #emda 3obara 3n el secret bs m3molo encreyption
-    event_type = request.headers.get("X-GitHub-Event")
+    event_type = request.headers.get("X-GitHub-Event") #msln push aw ping kda y3ne 
 
     # حساب الـ Signature المتوقع
     expected = (
@@ -271,23 +274,30 @@ async def get_github_webhook(
         print("Received ping - webhook connected successfully!")
         return {"status":"pong"}
 
+    if event_type !="push":
+        return {"status" : "ignored" , "event" : event_type}
     
     facts = parse_push_payload(payload)
 
+    if not facts["commit_shas"]:
+        return {"status" : "ignored" , "reason" : "no commits (e.g. branch deletion9zz7)"}
     message_text = (
-        f"Pusher: {facts['pusher_name']}. "
-        f"Commits: {facts['commit_count']}. "
-        f"Files changed: {facts['files_changed']}. "
+        f"Pusher: {facts['pusher_name']}.\n"
+        f"Commits: {facts['commit_count']}.\n"
+        f"Commit shas: {facts['commit_shas']}.\n" 
+        f"Push head sha (identifies this push — pass it as commit_sha): {facts['head_sha']}.\n"
+        f"Files changed: {facts['files_changed']}.\n"
         f"Evaluate this push and award XP."
     )
 
-    if event_type == "push":
-        background_tasks.add_task(handle_push, message_text)
+    if facts['head_sha'] and r.sismember("processed_pushes", facts["head_sha"]):
+        print(f"Duplicate push {facts['head_sha']} — already evaluated, skipping.")
+        return {"status": "duplicate"}
+    
+    background_tasks.add_task(handle_push,facts['pusher_name'],message_text, facts["head_sha"])
 
-    return {"status": "received"}
-
-def handle_push(message_text):
-    print(message_text)
+# def handle_push(message_text):
+#     print(message_text)
 
 
 
@@ -306,15 +316,62 @@ def award_xp(xp:XPAward):
     
     for entry in leaderboard:
         if entry[1] == xp.name:
+            if r.sismember("processed_commits" , xp.commit_sha):
+                return f"Already processed commit {xp.commit_sha} — no XP awarded (already recorded)."  
+                    
             entry[2] += xp.xp_awarded
             total_xp = entry[2]
+            r.sadd("processed_commits" , xp.commit_sha)
             break
     else:
-            raise HTTPException(status_code=404 , detail= f"{xp.name} not on leaderboard — run seed_interns.py?")  #lma eltool btdrb w msh bt4t8l btrg3 404 
+         return {"status" :"failed" , "name" :xp.name , "error": "Maybe the name is not there?"}
+        # raise HTTPException(status_code=404 , detail= f"{xp.name} not on leaderboard — run seed_interns.py?")  #lma eltool btdrb w msh bt4t8l btrg3 404 
 
 
     r.set(LEADERBOARD_KEY,json.dumps(leaderboard))
     return {"status" :"awarded" , "name" :xp.name , "total_xp": total_xp}
+
+
+
+import sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent.parent))#dy 3shan tzbtly el path bta3 xp_calculator.agent 
+from xp_calculator.agent import root_agent  # or just reuse agent.py's import
+
+evaluator_runner = InMemoryRunner(agent=root_agent, app_name="xp_evaluator")
+
+
+def is_known_intern(name: str) -> bool:
+    data = r.get(LEADERBOARD_KEY)
+    return bool(data) and name in {entry[1] for entry in json.loads(data)}
+
+
+async def handle_push(pusher_name: str, message_text: str, head_sha: str):
+    if not is_known_intern(pusher_name):
+        print(f"Ignoring push from {pusher_name} - not a tracked intern.")
+        return
+
+    session = await evaluator_runner.session_service.create_session(
+        app_name="xp_evaluator",
+        user_id=pusher_name
+    )
+
+    message = types.Content(
+        role="user",
+        parts=[types.Part(text=message_text)]
+    )
+    async for event in evaluator_runner.run_async(
+        user_id=pusher_name,
+        session_id=session.id,
+        new_message=message
+        ):
+        info = extract_event_info(event)
+        if info:
+            print(f"[{info['type']}]: {info}")
+
+    if head_sha:
+        r.sadd("processed_pushes" , head_sha)        
+
 
 if __name__ == "__main__":
     import uvicorn
