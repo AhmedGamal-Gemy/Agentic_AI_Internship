@@ -297,7 +297,7 @@ async def get_github_webhook(
     background_tasks.add_task(handle_push,facts['pusher_name'],message_text, facts["head_sha"])
 
 # def handle_push(message_text):
-    print(message_text)
+    # print(message_text)
 
 
 
@@ -376,5 +376,5 @@ async def handle_push(pusher_name: str, message_text: str, head_sha: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8010)
+    uvicorn.run(app, host="0.0.0.0", port=8015)
 
