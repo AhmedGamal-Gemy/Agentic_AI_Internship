@@ -15,4 +15,5 @@ dependencies = [
 [tool.uv.workspace]
 members = [
     "challenge_generator",
+    "problem_solver",
 ]
