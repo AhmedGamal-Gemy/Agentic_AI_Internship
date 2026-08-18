@@ -1306,8 +1306,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "exa-py", specifier = ">=2.16.0" },
-    { name = "google-adk", extras = ["extenstions"] },
-    { name = "litellm" },
+    { name = "google-adk", specifier = ">=2.4.0" },
+    { name = "litellm", specifier = ">=1.84.0" },
     { name = "orjson", specifier = ">=3.11.9" },
     { name = "redis", specifier = ">=8.0.1" },
 ]

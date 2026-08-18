@@ -6,8 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "exa-py>=2.16.0",
-  "google-adk[extenstions]",
-  "litellm",
+  "google-adk>=2.4.0",
+  "litellm>=1.84.0",
   "orjson>=3.11.9",
   "redis>=8.0.1",
 ]
