@@ -1,27 +1,30 @@
-"""Tests for the problem_solver orchestrator agent."""
+"""Tests for the problem_solver orchestrator and its sub-agents."""
 
 import problem_solver
-from problem_solver.agent import (
-    build_plan,
-    complete_task,
-    execute_step,
-    review_step,
-)
+from problem_solver.implementer import execute_step
+from problem_solver.planning import build_plan
+from problem_solver.review import complete_task, review_step
 
 
 def test_agent_is_exported() -> None:
     assert problem_solver.agent.name == "Problem_Solver"
 
 
-def test_agent_exposes_orchestration_tools() -> None:
-    tool_names = {tool.__name__ for tool in problem_solver.agent.tools}
-    assert tool_names == {
-        "research_problem",
-        "build_plan",
-        "execute_step",
-        "review_step",
-        "complete_task",
+def test_root_agent_delegates_to_sub_agents() -> None:
+    names = {sub.name for sub in problem_solver.agent.sub_agents}
+    assert names == {
+        "Research_Agent",
+        "Planning_Agent",
+        "Implementer_Agent",
+        "Review_Agent",
     }
+
+
+def test_sub_agents_have_expected_tools() -> None:
+    assert {t.__name__ for t in problem_solver.research_agent.tools} == {"research_problem"}
+    assert {t.__name__ for t in problem_solver.planning_agent.tools} == {"build_plan"}
+    assert {t.__name__ for t in problem_solver.implementer_agent.tools} == {"execute_step"}
+    assert {t.__name__ for t in problem_solver.review_agent.tools} == {"review_step", "complete_task"}
 
 
 def test_review_gate_accepts_good_output() -> None:
