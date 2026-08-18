@@ -14,6 +14,18 @@ from .state_store import (
     save_workflow,
     update_workflow,
 )
+from .workflow import (
+    RESUME_KEYWORDS,
+    execute_one_task,
+    report,
+    resume,
+    resume_from_path,
+    review_plan,
+    run_planning,
+    run_research,
+    split_plan,
+    start_workflow,
+)
 
 __all__ = [
     "agent",
@@ -26,4 +38,14 @@ __all__ = [
     "save_workflow",
     "update_workflow",
     "append_event",
+    "start_workflow",
+    "run_research",
+    "run_planning",
+    "split_plan",
+    "review_plan",
+    "execute_one_task",
+    "resume",
+    "resume_from_path",
+    "report",
+    "RESUME_KEYWORDS",
 ]
