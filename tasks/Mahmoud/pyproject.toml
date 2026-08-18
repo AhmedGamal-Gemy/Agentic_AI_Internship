@@ -1,10 +1,27 @@
 [project]
-name = "projects"
+name = "mahmoud-agentic"
 version = "0.1.0"
-description = "Add your description here"
+description = "Mahmoud's Agentic AI Internship workspace (challenge generator + XP webhook)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
-    "google-adk[extensions]>=2.4.0",
-    "litellm>=1.92.0",
+    "exa-py>=2.16.0",
+    "fastapi>=0.115.0",
+    "google-adk>=1.0.0",
+    "litellm>=1.50.0",
+    "orjson>=3.11.9",
+    "python-dotenv>=1.0.0",
+    "redis>=8.0.1",
+    "requests>=2.32.0",
+    "uvicorn[standard]>=0.30.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
