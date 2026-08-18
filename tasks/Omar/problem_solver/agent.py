@@ -1,5 +1,13 @@
 from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
+from .sandbox import run_code
+
+import google.adk.models.lite_llm as _adk_lite_llm
+
+# gpt-oss on Groq streams `reasoning_content`, which ADK stores and Groq
+# then rejects when the assistant message is resent. Ignore the reasoning
+# stream entirely (we only need the final answer).
+_adk_lite_llm._extract_reasoning_value = lambda message: None
 
 planner = Agent(
     name="planner",
@@ -25,6 +33,22 @@ Write a complete, runnable Python solution that follows the plan:
    and prints "PASS: <input> -> <output>" or "FAIL: expected <expected>, got <actual>".
 Output ONLY the Python code, no explanations.""",
     output_key="solution",
+    disallow_transfer_to_peers=True,
+)
+
+verifier = Agent(
+    name="verifier",
+    model=LiteLlm("groq/openai/gpt-oss-120b"),
+    instruction="""You receive a coding problem, the planner's plan {plan?}, and the coder's solution {solution?}.
+1. Call the run_code tool with the solution to execute it, then inspect exit_code, stdout, and stderr.
+2. A traceback, nonzero exit_code, timeout, or any "FAIL" line in stdout means the solution is NOT verified.
+   Every sample test must print "PASS".
+3. Also review the logic against the problem and the plan for mistakes the tests may miss.
+Output ONLY one of:
+- If the solution runs and passes all checks: "approved" followed by the final verified solution code.
+- Otherwise: "rejected" followed by specific, actionable feedback: what is wrong and exactly how to fix it.""",
+    output_key="verdict",
+    tools=[run_code],
     disallow_transfer_to_peers=True,
 )
 
