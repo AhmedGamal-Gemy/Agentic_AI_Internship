@@ -1,6 +1,6 @@
-# Kareem's Agentic AI Project
+# Kareem's Internship System
 
-Three agents built with Google ADK for the Agentic AI Internship.
+Three agents built for the Internship program: challenge generator, XP evaluator, and solution reviewer.
 
 ## Agents
 
@@ -32,3 +32,4 @@ REDIS_PASSWORD=
 GITHUB_WEBHOOK_SECRET=
 SERVER_URL=http://localhost:8008
 ```
+

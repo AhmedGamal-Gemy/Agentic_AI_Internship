@@ -1,9 +1,10 @@
 [project]
 name = "kareem-project"
 version = "0.1.0"
-description = "Kareem's Agentic AI Internship project"
+description = "Kareem's Internship project"
 readme = "README.md"
 requires-python = ">=3.12"
+
 dependencies = [
     "google-adk",
     "python-dotenv",

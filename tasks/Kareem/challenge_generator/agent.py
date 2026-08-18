@@ -2,7 +2,11 @@ import os
 import requests
 import asyncio
 from dotenv import load_dotenv
-from exa_py import Exa
+try:
+    from exa_py import Exa
+except ImportError:
+    Exa = None
+
 from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
 import litellm
@@ -14,6 +18,8 @@ SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8008")
 
 
 def exa_search(query: str) -> str:
+    if not Exa:
+        return "Exa module not installed. Proceeding with general search capability."
     api_key = os.getenv("EXA_API_KEY")
     if not api_key:
         return "Exa API key missing."
@@ -27,6 +33,7 @@ def exa_search(query: str) -> str:
         return "\n".join(lines) if lines else "No results found."
     except Exception as e:
         return f"Search error: {e}"
+
 
 
 async def save_to_database(topic: str, difficulty: str, description: str, solution: str) -> str:

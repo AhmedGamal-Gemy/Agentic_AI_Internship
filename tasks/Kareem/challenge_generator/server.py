@@ -26,7 +26,8 @@ from challenge_generator.agent import root_agent as challenge_generator_agent
 from xp_calculator.agent import root_agent as xp_evaluator_agent
 from solution_reviewer.agent import root_agent as solution_reviewer_agent
 
-app = FastAPI(title="Kareem's Agentic AI Server")
+app = FastAPI(title="Kareem's Challenge Server")
+
 
 app.add_middleware(
     CORSMiddleware,
