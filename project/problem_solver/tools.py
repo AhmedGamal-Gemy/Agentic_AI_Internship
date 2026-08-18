@@ -5,7 +5,14 @@ from exa_py import Exa
 
 load_dotenv()
 
-exa = Exa(api_key=os.getenv("EXA_API_KEY"))
+_exa = None
+
+
+def _get_exa() -> Exa:
+    global _exa
+    if _exa is None:
+        _exa = Exa(api_key=os.getenv("EXA_API_KEY"))
+    return _exa
 
 
 def exa_search(query: str) -> str:
@@ -21,7 +28,12 @@ def exa_search(query: str) -> str:
     Returns:
         A short summary of the most relevant search results
     """
-    results = exa.search(query, type="auto", num_results=5, contents={"highlights": True})
+    if not os.getenv("EXA_API_KEY"):
+        return "Web search unavailable (no EXA_API_KEY). Proceed using your own knowledge."
+
+    results = _get_exa().search(
+        query, type="auto", num_results=5, contents={"highlights": True}
+    )
 
     lines = []
     for item in results.results:

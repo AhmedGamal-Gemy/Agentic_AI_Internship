@@ -1,8 +1,8 @@
 from google.adk.agents import Agent
-from google.adk.code_executors.container_code_executor import ContainerCodeExecutor
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.tools import ToolContext
 
+from problem_solver.code_executor import get_code_executor
 from problem_solver.tools import exa_search
 
 MODEL_GROQ = "groq/llama-3.3-70b-versatile"
@@ -131,7 +131,7 @@ solver_agent = Agent(
 5. Only when all tests pass: call store_solution with the final code, the tests, and a short explanation with complexity. Also call increment_attempt.
 6. Reply confirming the solution passed execution. Never claim success without seeing passing tool_output.""",
     tools=[get_plan, get_attempt_count, store_solution, increment_attempt],
-    code_executor=ContainerCodeExecutor(timeout_seconds=60),
+    code_executor=get_code_executor(),
 )
 
 critic_agent = Agent(
