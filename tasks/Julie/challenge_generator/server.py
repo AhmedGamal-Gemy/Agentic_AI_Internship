@@ -311,6 +311,7 @@ class XPAward(BaseModel):
 
 @app.post("/xp")
 def award_xp(xp:XPAward):
+    print("xp endpoint called")
     data=r.get(LEADERBOARD_KEY) 
     leaderboard= json.loads(data) if data else []
     total_xp = 0
@@ -333,7 +334,7 @@ def award_xp(xp:XPAward):
     else:
          return {"status" :"failed" , "name" :xp.name , "error": "Maybe the name is not there?"}
         # raise HTTPException(status_code=404 , detail= f"{xp.name} not on leaderboard — run seed_interns.py?")  #lma eltool btdrb w msh bt4t8l btrg3 404 
-
+    
 
     r.set(LEADERBOARD_KEY,json.dumps(leaderboard))
     return {"status" :"awarded" , "name" :xp.name , "total_xp": total_xp}
