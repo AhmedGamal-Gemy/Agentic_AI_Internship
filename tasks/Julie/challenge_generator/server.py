@@ -392,6 +392,14 @@ def update_intern_history(name: str, xp_awarded: int, commit_count: int, files_c
     r.rpush(f"{HISTORY_KEY_PREFIX}{name}", json.dumps(event))
 #w elfunction dy elmfrod hnnadeha lma n3ml xp f hnnadeha fe XPAward
 
+@app.post("/get_history")
+async def get_intern_history(name:str)-> list[dict]:
+    """Return the full list of past push events for one intern."""
+    raw_events = r.lrange(f"{HISTORY_KEY_PREFIX}{name}",0,-1)
+    return [json.loads(e) for e in raw_events]
+
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8013)

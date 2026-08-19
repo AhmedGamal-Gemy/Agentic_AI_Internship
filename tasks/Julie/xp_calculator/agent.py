@@ -4,7 +4,9 @@ import requests
 import asyncio
 # from ..challenge_generator.agent import SERVER_URL
 import os 
+# from ..challenge_generator. import get_intern_history
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8007")
+
 async def assign_xp(name: str, xp_awarded: int, commit_count: int, files_changed: int) -> str:
     """Award XP to an intern for a push.
 
@@ -30,6 +32,28 @@ async def assign_xp(name: str, xp_awarded: int, commit_count: int, files_changed
     return f"Awarded {xp_awarded} XP to {name}. New total: {data['total_xp']}."
 
 
+async def get_intern_history(name: str) -> list[str]:
+    """
+    get history of intern of this name
+
+    """
+    payload = {"name": name}
+    response = await asyncio.to_thread(
+        requests.post, f"{SERVER_URL}/get_history", json=payload, timeout=10
+    )
+    response.raise_for_status()
+    data = response.json()
+    return data
+
+
+async def summarize_progress(name: str) -> str:
+    """Summarize an intern's activity using their real history."""
+    history = await get_intern_history(name)
+    if not history:
+        return f"{name} has no recorded activity yet."
+    total_xp = sum(e["xp_awarded"] for e in history)
+    total_pushes = len(history)
+    return f"{name} has pushed {total_pushes} times, earning {total_xp} XP total."
 
 root_agent = Agent(
     model=LiteLlm("groq/llama-3.3-70b-versatile"),
@@ -42,5 +66,5 @@ root_agent = Agent(
         "2. Call assign_xp exactly once with the intern's name and your XP decision. \n"
         "Always use the provided tools rather than describing function calls in text."
         ),
-    tools=[assign_xp]
+    tools=[assign_xp , summarize_progress , get_intern_history]
 )
