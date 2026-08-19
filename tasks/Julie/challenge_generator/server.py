@@ -323,6 +323,12 @@ def award_xp(xp:XPAward):
             entry[2] += xp.xp_awarded
             total_xp = entry[2]
             r.sadd("processed_commits" , xp.commit_sha)
+            update_intern_history(
+                name=xp.name,
+                xp_awarded=xp.xp_awarded,
+                commit_count=xp.commit_count,
+                files_changed=xp.files_changed,
+            )
             break
     else:
          return {"status" :"failed" , "name" :xp.name , "error": "Maybe the name is not there?"}
@@ -373,6 +379,18 @@ async def handle_push(pusher_name: str, message_text: str, head_sha: str):
     if head_sha:
         r.sadd("processed_pushes" , head_sha)        
 
+
+
+HISTORY_KEY_PREFIX = "history:" # one Redis list per intern: history: {name} f kda kol wa7ed 3ndo list esmha history: {name} 
+def update_intern_history(name: str, xp_awarded: int, commit_count: int, files_changed: int) -> None:
+    event = {
+        "timestamp": time. time(),
+        "xp_awarded": xp_awarded,
+        "commit_count": commit_count,
+        "files_changed": files_changed,
+    }
+    r.rpush(f"{HISTORY_KEY_PREFIX}{name}", json.dumps(event))
+#w elfunction dy elmfrod hnnadeha lma n3ml xp f hnnadeha fe XPAward
 
 if __name__ == "__main__":
     import uvicorn
