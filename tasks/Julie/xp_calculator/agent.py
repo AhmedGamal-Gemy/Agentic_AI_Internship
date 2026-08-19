@@ -7,6 +7,7 @@ import os
 # from ..challenge_generator. import get_intern_history
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8007")
 
+
 async def assign_xp(name: str, xp_awarded: int, commit_count: int, files_changed: int , commit_sha:str) -> str:
     """Award XP to an intern for a push.
 
@@ -24,9 +25,15 @@ async def assign_xp(name: str, xp_awarded: int, commit_count: int, files_changed
     """
     payload = {"name": name, "xp_awarded": xp_awarded,
                "commit_count": commit_count, "files_changed": files_changed , "commit_sha": commit_sha}
+    
+    print("server url", SERVER_URL)
+    print("payload". payload)
+
     response = await asyncio.to_thread(
         requests.post, f"{SERVER_URL}/xp", json=payload, timeout=10
     )
+
+    print("xp response",response.status_code,response.text)
     response.raise_for_status()
     data = response.json()
     return f"Awarded {xp_awarded} XP to {name}. New total: {data['total_xp']}."
