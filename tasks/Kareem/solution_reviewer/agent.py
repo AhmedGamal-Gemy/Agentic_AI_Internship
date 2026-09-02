@@ -5,7 +5,12 @@ from dotenv import load_dotenv
 from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
 
+import litellm
+
 load_dotenv()
+litellm.drop_params = True
+litellm.num_retries = 8
+litellm.retry_strategy = "exponential_backoff_retry"
 
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8008")
 
