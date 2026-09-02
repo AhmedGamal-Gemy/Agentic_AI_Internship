@@ -74,12 +74,10 @@ def progress_tool(action: str, updates: dict | None = None) -> dict:
         "error": "Invalid action. Use 'read', 'update', or 'reset'."
     }
 
+model="gemini-3.5-flash-lite"
 
 quiz_agent = Agent(
-    model=LiteLlm(
-        model="openrouter/meta/muse-spark-1.2",
-        max_tokens=4096,
-    ),
+    model=model ,
     name="root_agent",
     description="A quiz agent for a Learning / Career Coach system.",
     instruction="""

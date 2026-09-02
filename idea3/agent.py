@@ -1,3 +1,4 @@
+from google.adk import Agent
 from google.adk.models.lite_llm import LiteLlm
 import dotenv  
 from idea3.plan_generator.agent import plan_generator
@@ -15,9 +16,12 @@ seq_agent=SequentialAgent(
 
 )
 
+orchestration_agent = Agent(
+    name="Orchestration_Agent",
+    sub_agents=[seq_agent, quiz_agent],
+)
 
-
-root_agent =seq_agent
+root_agent =orchestration_agent
 
 
 
