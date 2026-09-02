@@ -3,10 +3,6 @@ name = "idea3"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-<<<<<<< HEAD
-    "google-adk[extensions]>=2.8.0",
-=======
     "google-adk>=2.8.0",
     "litellm>=1.99.0",
->>>>>>> 5a3aadd70b05a38e9ace75a848d233603a9c4550
 ]

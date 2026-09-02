@@ -4,14 +4,18 @@ from idea3.plan_generator.agent import plan_generator
 dotenv.load_dotenv()
 from google.adk.agents.sequential_agent import SequentialAgent
 from idea3.goal_analyzer.agent import goal_analyzer
+from idea3.quiz_agent.agent import quiz_agent
 
 
 model = LiteLlm("openrouter/meta/muse-spark-1.2", max_tokens=4096)
 
 seq_agent=SequentialAgent(
     name="Sequential_Agent",
-    sub_agents=[plan_generator,goal_analyzer]
+    sub_agents=[goal_analyzer, plan_generator],
+
 )
+
+
 
 root_agent =seq_agent
 

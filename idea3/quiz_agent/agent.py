@@ -75,7 +75,7 @@ def progress_tool(action: str, updates: dict | None = None) -> dict:
     }
 
 
-root_agent = Agent(
+quiz_agent = Agent(
     model=LiteLlm(
         model="openrouter/meta/muse-spark-1.2",
         max_tokens=4096,
