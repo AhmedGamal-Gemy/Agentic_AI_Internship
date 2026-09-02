@@ -3,9 +3,10 @@ from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents.sequential_agent import SequentialAgent
 from google.adk.agents.parallel_agent import ParallelAgent
 
+model="gemini-3.5-flash-lite"
 
-root_agent = Agent(
-  model=LiteLlm("openrouter/meta/muse-spark-1.2",max_tokens=4096),
+goal_analyzer = Agent(
+    model=model,
     name='goal_analyzer',
     description='A helpful assistant for user questions.',
       instruction="""

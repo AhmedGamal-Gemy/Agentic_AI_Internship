@@ -4,8 +4,8 @@ import dotenv
 
 
 dotenv.load_dotenv()
+model="gemini-3.5-flash-lite"
 
-model = LiteLlm("openrouter/meta/muse-spark-1.2", max_tokens=4096)
 
 plan_generator = Agent(
     name="plan_generator",
@@ -28,4 +28,12 @@ When a valid goal is provided:
     output_key="learning_plan"
 )
 
+import json
 
+def save_plan_tool(plan: dict) -> str:
+    """Save the generated learning plan to progress.json."""
+
+    with open("progress.json", "w", encoding="utf-8") as file:
+        json.dump(plan, file, indent=2, ensure_ascii=False)
+
+    return "Learning plan saved successfully."
