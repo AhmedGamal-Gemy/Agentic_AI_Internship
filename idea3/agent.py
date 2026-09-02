@@ -1,11 +1,18 @@
-from google.adk.agents.llm_agent import Agent
+from google.adk.models.lite_llm import LiteLlm
+import dotenv  
+from idea3.plan_generator.agent import plan_generator
+dotenv.load_dotenv()
+from google.adk.agents.sequential_agent import SequentialAgent
 
-root_agent = Agent(
-    model='<FILL_IN_MODEL>',
-    name='root_agent',
-    description='A helpful assistant for user questions.',
-    instruction='Answer user questions to the best of your knowledge',
+
+model = LiteLlm("openrouter/meta/muse-spark-1.2", max_tokens=4096)
+
+seq_agent=SequentialAgent(
+    name="Sequential_Agent",
+    sub_agents=[plan_generator,]
 )
+
+root_agent =seq_agent
 
 
 
