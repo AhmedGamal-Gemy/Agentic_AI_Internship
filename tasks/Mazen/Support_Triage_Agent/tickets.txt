@@ -1,0 +1,5 @@
+Message 1: Hi, how do I change my password? I can't find the option in the settings.
+
+Message 2: This is ridiculous. I've been waiting for 3 days for a refund and nobody is helping me. I want to cancel my subscription immediately and get my money back!
+
+Message 3: URGENT: Our production server is down and we are getting 500 errors on every single API call. We are losing money every minute this is down. Call me ASAP at 555-0199.
