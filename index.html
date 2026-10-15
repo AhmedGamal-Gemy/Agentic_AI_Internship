@@ -371,11 +371,8 @@
 
   <script>
     // ═══════════════════════════════════════════════════════════
-    //  CONFIG — point this at your server.py bridge
+    //  HARDCODED DATA (fallback) ────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    const API_BASE = "http://localhost:8007";  // your server.py's address
-
-    // ── HARDCODED DATA (fallback) ──────────────────────────
     const DEFAULT_DATA = [
       [26060001, "جنه اسامه محمد يوسف", 0],
       [26060002, "كريم وائل محمد أبو الفتوح", 0],
@@ -394,7 +391,10 @@
       [26060015, "شهد خالد فتحي سيد", 0],
       [0, "احمد جمال احمد", -500],
     ];
-
+    // ═══════════════════════════════════════════════════════════
+    //  CONFIG — point this at your server.py bridge
+    // ═══════════════════════════════════════════════════════════
+    const API_BASE = "http://localhost:8007";  // your server.py's address
     // ── STATE ──────────────────────────────────────────────
     let pollTimer = null;
     let isPolling = true;

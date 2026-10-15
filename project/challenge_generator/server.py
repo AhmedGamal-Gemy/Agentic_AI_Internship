@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+#create fastAPI app
 app = FastAPI()
 
 # Allow the browser (leaderboard.html) to fetch from this server.
