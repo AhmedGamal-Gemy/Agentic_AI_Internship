@@ -2,21 +2,20 @@ from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
 from exa_py import Exa
 import os
-import redis
 import requests
-import json
 import asyncio
-    
-SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8007")
-exa = Exa(api_key=os.getenv("EXA_API_KEY"))
 
-r = redis.Redis(
-    host=os.getenv("REDIS_HOST"),
-    port=int(os.getenv("REDIS_PORT", 6379)),
-    username=os.getenv("REDIS_USERNAME"),
-    password=os.getenv("REDIS_PASSWORD"),
-    decode_responses=True,
-)
+
+import litellm
+litellm.num_retries = 10 # auto-retries on RateLimitError/APIError with exponential backoff
+
+# Agent : model ( llm ), tools, instructions
+
+# framework   litellm   providers -> lock in 
+
+SERVER_URL = os.getenv("SERVER_URL")
+
+exa = Exa(api_key=os.getenv("EXA_API_KEY"))
 
 
 def exa_search(query: str) -> str:
@@ -31,17 +30,23 @@ def exa_search(query: str) -> str:
     Returns:
         A short summary of the most relevant search results
     """
-    results = exa.search(
+    exaaaaa = exa.search(
         query, type="auto", num_results=5, contents={"highlights": True}
     )
     
     lines = []
+
+    # You're about to step into the exciting world of AI agents. Forget simple chatbots that just answer questions. We're diving deep into the Agent Development Kit (ADK
+    # Beginner Note: ADK applications are built using two main classes: Agent (defines an AI's instructions, tools, and behavior) and
     
-    for item in results.results:
+    for item in exaaaaa.results:
         highlight = item.highlights[0] if item.highlights else ""
+        highlight = highlight[:300]  # cap each highlight
         lines.append(f"- {item.title}: {highlight}")
     
     return "\n".join(lines) if lines else "No results found."
+
+
 
 async def save_to_database(topic: str, difficulty: str, description: str, solution : str) -> str:
     """Save a generated challenge to persistent storage.
@@ -65,54 +70,62 @@ async def save_to_database(topic: str, difficulty: str, description: str, soluti
         "solution" : solution
         }
 
+
     response = await asyncio.to_thread(
         requests.post, f"{SERVER_URL}/save", json=payload, timeout=10
-        )
-
+    )
     response.raise_for_status()
 
     data = response.json()
     
     return f"Saved challenge with ID {data['id']}"
 
+
 async def push_to_leaderboard(topic: str, difficulty: str, description: str, solution: str) -> str:
     """Post a challenge live to the leaderboard display.
-    This Show the CURRENT challenge on the leaderboard HTML —
-    it updates every five seconds on the html page.
+
+    This sets the CURRENT challenge shown on the leaderboard HTML —
+    it updates within 5 seconds on the projector.
 
     Args:
-        topic: challenge topic
+        topic: The challenge topic
         difficulty: One of "easy", "medium", or "hard"
-        description: The challenge description
-        solution: The challenge solution
+        description: The full challenge description
 
     Returns:
-        Confirmation message that the challenge has been pushed to the leaderboard
+        Confirmation message
     """
-    payload = {"topic": topic, "difficulty": difficulty, "description": description, "solution": solution}
+    payload = {"topic": topic, "difficulty": difficulty, "description": description, "solution" : solution}
+
     response = await asyncio.to_thread(
-    requests.post, f"{SERVER_URL}/challenge", json=payload, timeout=10
+        requests.post, f"{SERVER_URL}/challenge", json=payload, timeout=10
     )
+
     if response.status_code != 200:
-        print("ERROR:", response.text)
-        print("STATUS:", response.status_code)
-        print("BODY:", response.text)
+        print("VALIDATION ERROR:", response.text)  # shows exactly what's wrong
+
     response.raise_for_status()
     
-    return "Challenge posted to leaderboard!"
+    return "Challenge posted to leaderboard live!"
+
+
 
 root_agent = Agent(
     model=LiteLlm("groq/llama-3.3-70b-versatile"),
-    name='Challenge_Generator',
-    description='A helpful assistant for generating coding challenges for an internship',
-    instruction = """
-    You are a Challenge Generator agent. Follow this sequence:
+    name='root_agent',
+    description='A helpful assistant for user questions.',
+    instruction=(
+    "You generate coding challenges. When asked to create a challenge:\n"
+    "1. Call exa_search to find a current, real-world example on the topic.\n"
+    "2. Write a challenge (topic, difficulty, description, solution) based on it.\n"
+    "3. Call save_to_database to persist it.\n"
+    "4. Call push_to_leaderboard to post it live.\n"
+    "Always use the provided tools rather than describing function calls in text."),
+    tools= [exa_search, save_to_database, push_to_leaderboard]
 
-    1. Call exa_search with a query related to the requested topic. WAIT for the result.
-    2. Using the search results, write a challenge with a topic, difficulty, description, and solution.
-    3. Call save_to_database AND push_to_leaderboard TOGETHER in the same turn, both with the same challenge details.
-
-    Do not call exa_search at the same time as the other tools — it must run first, alone, since you need its results before writing the challenge. But save_to_database and push_to_leaderboard should always be called together in a single turn once the challenge is written.
-    """,
-    tools=[exa_search, save_to_database, push_to_leaderboard]
 )
+
+
+
+
+

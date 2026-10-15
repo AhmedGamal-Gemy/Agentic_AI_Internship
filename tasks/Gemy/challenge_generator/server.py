@@ -171,6 +171,7 @@ def get_leaderboard():
 
 
 
+
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 from agent import root_agent
@@ -218,7 +219,8 @@ async def run_agent(user_message: str):
         ]
 
     )
-    
+
+    # more than one agent. in the same chat.
 
     steps = []
     final_text = []
@@ -267,10 +269,12 @@ def parse_push_payload(payload: dict) -> dict:
         "pusher_name": pusher_name,
         "commit_count": commit_count,
         "files_changed": len(files_changed),
+        "commit_shas": [commit.get("id") or commit.get("sha") for commit in commits],
+        "head_sha": payload.get("after") or "",
     }
 
 
-
+# github -> /github_webhook
 
 @app.post("/github_webhook")
 async def get_github_webhook(request: Request, background_tasks: BackgroundTasks):
@@ -292,18 +296,32 @@ async def get_github_webhook(request: Request, background_tasks: BackgroundTasks
         print("Received ping — webhook connected successfully!")
         return {"status": "pong"}
 
+    if event_type != "push":
+        return {"status": "ignored", "event": event_type}
 
     facts = parse_push_payload(payload)
 
+    if not facts["commit_shas"]:
+        return {"status": "ignored", "reason": "no commits (e.g. branch deletion)"}
+
+
+
+
     message_text = (
         f"Pusher: {facts['pusher_name']}.\n"
-        f"Commits: {facts['commit_count']}.\n "
-        f"Files changed: {facts['files_changed']}.\n "
+        f"Commits: {facts['commit_count']}.\n"
+        f"Commit shas: {facts['commit_shas']}.\n"
+        f"Push head sha (identifies this push — pass it as commit_sha): {facts['head_sha']}.\n"
+        f"Files changed: {facts['files_changed']}.\n"
+
         f"Evaluate this push and award XP.\n"
     )
 
-    if event_type == "push":
-        background_tasks.add_task(handle_push, facts['pusher_name'], message_text)
+    if facts["head_sha"] and r.sismember("processed_pushes", facts["head_sha"]):
+        print(f"Duplicate push {facts['head_sha']} — already evaluated, skipping.")
+        return {"status": "duplicate"}
+
+    background_tasks.add_task(handle_push, facts['pusher_name'], message_text, facts["head_sha"])
 
     return {"status": "received"}
 
@@ -327,20 +345,33 @@ class XPAward(BaseModel):
     xp_awarded: int
     commit_count: int
     files_changed: int
+    commit_sha : str
 
 @app.post("/xp")
 def award_xp(xp: XPAward):
     data = r.get(LEADERBOARD_KEY)
     leaderboard = json.loads(data) if data else []
     total_xp = 0
+
     
     for entry in leaderboard:
         if entry[1] == xp.name:
+            if r.sismember("processed_commits", xp.commit_sha):
+                return f"Already processed commit {xp.commit_sha} — no XP awarded (already recorded)."
+   
             entry[2] += xp.xp_awarded
             total_xp = entry[2]
+
+            update_intern_history(
+                name=xp.name,
+                xp_awarded=xp.xp_awarded,
+                commit_count=xp.commit_count,
+                files_changed=xp.files_changed,
+            )
+            r.sadd("processed_commits", xp.commit_sha)
             break
     else:
-        raise HTTPException(status_code=404, detail=f"{xp.name} not on leaderboard — run seed_interns.py?")
+        return {"status": "failed", "name": xp.name, "error": "Maybe the name is not there?"}
 
     r.set(LEADERBOARD_KEY, json.dumps(leaderboard))
     return {"status": "awarded", "name": xp.name, "total_xp": total_xp}
@@ -367,7 +398,7 @@ def is_known_intern(name: str) -> bool:
     data = r.get(LEADERBOARD_KEY)
     return bool(data) and name in {entry[1] for entry in json.loads(data)}
 
-async def handle_push(pusher_name: str, message_text: str):
+async def handle_push(pusher_name: str, message_text: str, head_sha: str = ""):
     if not is_known_intern(pusher_name):
         print(f"Ignoring push from {pusher_name} — not a tracked intern.")
         return
@@ -383,15 +414,40 @@ async def handle_push(pusher_name: str, message_text: str):
         info = extract_event_info(event)
         if info:
             print(f"[{info['type']}]", info)
+
+    # after the loop on purpose: a crashed run stays unmarked so a retried delivery re-evaluates it
+    if head_sha:
+        r.sadd("processed_pushes", head_sha)
             
 
 
 
 
 
+
+
+
+
+
+
+
+HISTORY_KEY_PREFIX = "history:"  # one Redis list per intern: history:{name}
+
+def update_intern_history(name: str, xp_awarded: int, commit_count: int, files_changed: int) -> None:
+    event = {
+        "timestamp": time.time(),
+        "xp_awarded": xp_awarded,
+        "commit_count": commit_count,
+        "files_changed": files_changed,
+    }
+    r.rpush(f"{HISTORY_KEY_PREFIX}{name}", json.dumps(event))
+
+
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8009)
+    uvicorn.run(app, host="0.0.0.0", port=8011)
 
 
 

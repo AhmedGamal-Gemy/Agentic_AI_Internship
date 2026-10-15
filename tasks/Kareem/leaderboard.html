@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Internship Challenge & Leaderboard Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(23, 32, 54, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --accent-blue: #38bdf8;
+      --accent-green: #34d399;
+      --accent-gold: #fbbf24;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(52, 211, 153, 0.1) 0px, transparent 50%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: var(--subtext);
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.75rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+      transition: border-color 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+    }
+
+    .badge-easy { background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+    .badge-medium { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+    .badge-hard { background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+
+    .challenge-topic {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #38bdf8;
+      margin-bottom: 0.75rem;
+    }
+
+    .challenge-desc {
+      color: #cbd5e1;
+      line-height: 1.6;
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+    }
+
+    .code-block {
+      font-family: 'Fira Code', monospace;
+      background: #060911;
+      padding: 0.85rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: #a7f3d0;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+    }
+
+    .leaderboard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.1rem;
+      background: rgba(11, 15, 25, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 0.65rem;
+      transition: background 0.2s ease;
+    }
+
+    .leaderboard-item:hover {
+      background: rgba(30, 41, 59, 0.8);
+    }
+
+    .rank {
+      font-size: 1rem;
+      font-weight: 800;
+      width: 2rem;
+      color: var(--subtext);
+    }
+
+    .rank-1 { color: #fbbf24; }
+    .rank-2 { color: #cbd5e1; }
+    .rank-3 { color: #d97706; }
+
+    .intern-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex: 1;
+    }
+
+    .avatar {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .intern-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .xp-tag {
+      font-family: 'Fira Code', monospace;
+      font-weight: 700;
+      color: var(--accent-green);
+      font-size: 1rem;
+    }
+
+    .status-footer {
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: var(--subtext);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .indicator {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 6px #34d399;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Kareem's Challenge & Leaderboard Center</h1>
+    <p>Live Coding Challenges & Intern Leaderboard</p>
+  </header>
+
+  <div class="container">
+    <!-- Live Challenge Card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Live Challenge</span>
+        <span id="challenge-badge" class="badge badge-medium">MEDIUM</span>
+      </div>
+      <div class="challenge-content">
+        <div id="challenge-topic" class="challenge-topic">Loading challenge...</div>
+        <div id="challenge-desc" class="challenge-desc">Waiting for challenge generator...</div>
+        <div id="solution-container" style="display: none; margin-top: 1rem;">
+          <div style="font-weight: 600; font-size: 0.85rem; color: var(--subtext);">Expected Solution:</div>
+          <pre id="challenge-solution" class="code-block"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard Card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Intern Leaderboard</span>
+        <span style="font-size: 0.8rem; color: var(--subtext);">Auto-sync 5s</span>
+      </div>
+      <div id="leaderboard-list" class="leaderboard-list">
+        <div style="color: var(--subtext); text-align: center; padding: 2rem;">Loading leaderboard...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-footer">
+    <div class="indicator"></div>
+    <span>Server active at <strong>http://localhost:8008</strong></span>
+  </div>
+
+  <script>
+    const SERVER_URL = 'http://localhost:8008';
+
+    async function fetchChallenge() {
+      try {
+        const res = await fetch(`${SERVER_URL}/challenge`);
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        if (!data || !data.topic) {
+          document.getElementById('challenge-topic').innerText = "No active challenge currently posted.";
+          document.getElementById('challenge-desc').innerText = "Trigger challenge_generator agent to post a challenge.";
+          return;
+        }
+
+        document.getElementById('challenge-topic').innerText = data.topic;
+        document.getElementById('challenge-desc').innerText = data.description || '';
+
+        const badge = document.getElementById('challenge-badge');
+        const diff = (data.difficulty || 'medium').toLowerCase();
+        badge.className = `badge badge-${diff}`;
+        badge.innerText = diff.toUpperCase();
+
+        if (data.solution) {
+          document.getElementById('solution-container').style.display = 'block';
+          document.getElementById('challenge-solution').innerText = data.solution;
+        } else {
+          document.getElementById('solution-container').style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Failed to fetch challenge:', err);
+      }
+    }
+
+    async function fetchLeaderboard() {
+      try {
+        const res = await fetch(`${SERVER_URL}/leaderboard`);
+        if (!res.ok) return;
+        let data = await res.json();
+
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        data.sort((a, b) => b[2] - a[2]);
+
+        const listContainer = document.getElementById('leaderboard-list');
+        listContainer.innerHTML = '';
+
+        data.forEach((intern, index) => {
+          const rank = index + 1;
+          const name = intern[1];
+          const xp = intern[2];
+          const initial = name.charAt(0).toUpperCase();
+
+          const item = document.createElement('div');
+          item.className = 'leaderboard-item';
+          item.innerHTML = `
+            <div class="rank ${rank <= 3 ? 'rank-' + rank : ''}">#${rank}</div>
+            <div class="intern-info">
+              <div class="avatar">${initial}</div>
+              <div class="intern-name">${name}</div>
+            </div>
+            <div class="xp-tag">${xp} XP</div>
+          `;
+          listContainer.appendChild(item);
+        });
+      } catch (err) {
+        console.error('Failed to fetch leaderboard:', err);
+      }
+    }
+
+    function pollData() {
+      fetchChallenge();
+      fetchLeaderboard();
+    }
+
+    pollData();
+    setInterval(pollData, 5000);
+  </script>
+</body>
+</html>

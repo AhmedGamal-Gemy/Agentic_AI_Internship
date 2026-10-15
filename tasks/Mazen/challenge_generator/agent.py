@@ -95,18 +95,19 @@ async def push_to_leaderboard(topic: str, difficulty: str, description: str, sol
     response.raise_for_status()    
     return "Challenge posted to leaderboard live!"
 
+
 root_agent = Agent(
     model=LiteLlm("groq/llama-3.3-70b-versatile"),
     name='Challenge_Generator',
     description='A helpful assistant for user questions.',
-    instruction='''You are a Challenge Generator.
-    For coding challenges:
+    instruction='''You generate coding challenges.
+    When you are asked to create a challenge:
     1. Call exa_search and wait.
     2. Generate the challenge.
     3. Call save_to_database and wait.
     4. Call current_challenge and wait.
     5. Call push_to_leaderboard and wait.
     6. Show the challenge to the user.
-    Never call more than one tool at the same time.''',
+    Never call more than one tool at the same time & Always use the provided tools rather than describing function calls in text.''',
     tools=[exa_search,save_to_database,current_challenge,push_to_leaderboard]
 )

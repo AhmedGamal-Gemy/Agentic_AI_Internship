@@ -1,0 +1,12 @@
+{
+  "topic": "prompt engineering",
+  "current_week": 1,
+  "current_topic": "few-shot prompting",
+  "completed_topics": [
+    "few-shot prompting"
+  ],
+  "quiz_score": 1,
+  "total_questions": 1,
+  "difficulty": "hard",
+  "topics_that_need_review": []
+}
